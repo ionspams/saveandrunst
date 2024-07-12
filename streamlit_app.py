@@ -3,6 +3,8 @@ import subprocess
 import sys
 import io
 import contextlib
+import os
+import tempfile
 import pkgutil
 
 def install_package(package):
@@ -12,9 +14,29 @@ def install_package(package):
         st.error(f"Error installing package {package}: {e}")
         raise
 
-def execute_code_in_memory(code_input):
+def save_code_and_run_with_dependencies(code_input, file_name):
     try:
-        import_lines = [line for line in code_input.split('\n') if line.startswith('import ') or line.startswith('from ')]
+        # Use temporary directory to save the code
+        temp_dir = tempfile.mkdtemp()
+        # Ensure the file name has a .py extension
+        if not file_name.endswith(".py"):
+            file_name += ".py"
+        script_path = os.path.join(temp_dir, file_name)
+        
+        with open(script_path, 'w', encoding='utf-8') as file:
+            file.write(code_input)
+        
+        # Run the script with dependencies
+        venv_path = os.path.join(temp_dir, "venv")
+        if not os.path.exists(venv_path):
+            subprocess.check_call([sys.executable, "-m", "venv", "venv"], cwd=temp_dir)
+        
+        activate_script = os.path.join(venv_path, "Scripts", "activate") if os.name == 'nt' else os.path.join(venv_path, "bin", "activate")
+
+        with open(script_path, 'r', encoding='utf-8') as file:
+            code_content = file.read()
+
+        import_lines = [line for line in code_content.split('\n') if line.startswith('import ') or line.startswith('from ')]
         required_packages = set()
         for line in import_lines:
             parts = line.split()
@@ -34,12 +56,23 @@ def execute_code_in_memory(code_input):
             if package not in installed_packages:
                 install_package(package)
 
-        with io.StringIO() as buf, contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
-            exec(code_input, {'__name__': '__main__'})
-            output = buf.getvalue()
-        st.text_area("Output", output, height=400)
+        if os.name == 'nt':
+            command = f'{activate_script} & streamlit run {script_path}'
+        else:
+            command = f'source {activate_script} && streamlit run {script_path}'
+
+        st.write(f"Running command: {command}")
+
+        result = subprocess.Popen(command, shell=True, cwd=temp_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = result.communicate()
+        if out:
+            st.text_area("Command Output", out.decode('utf-8'))
+        if err:
+            st.text_area("Command Error", err.decode('utf-8'))
+
+        st.success(f"Running Streamlit app: {script_path}")
     except Exception as e:
-        st.error(f"Error while executing the code: {e}")
+        st.error(f"Error while saving and running the script: {e}")
 
 def main():
     st.title("Streamlit App Code Runner and File Editor")
@@ -59,15 +92,16 @@ def main():
 
 def save_and_run_workflow():
     st.header("Save & Run Streamlit Code")
-    st.markdown("**Enter your Streamlit Python code below.** The code will be executed in-memory and the output will be displayed.")
+    st.markdown("**Enter your Streamlit Python code below.** The code will be saved as a `.py` file and run as a Streamlit app.")
     
     code_input = st.text_area("Enter your Streamlit Python code here", height=200)
+    file_name = st.text_input("Enter the file name (e.g., `app.py`)")
 
-    if st.button("Run Code"):
-        if code_input:
-            execute_code_in_memory(code_input)
+    if st.button("Save & Run"):
+        if code_input and file_name:
+            save_code_and_run_with_dependencies(code_input, file_name)
         else:
-            st.error("Please enter the code.")
+            st.error("Please enter the code and file name.")
 
 def edit_files_workflow():
     st.header("Edit Local Files")
