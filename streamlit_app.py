@@ -68,12 +68,17 @@ def save_and_run_workflow():
     st.header("Save & Run Streamlit Code")
     st.markdown("**Enter your Streamlit Python code below.** The code will be executed in-memory and the output will be displayed.")
     
-    code_input = st.text_area("Enter your Streamlit Python code here", height=200, key=generate_unique_key("code_input"))
-    file_name = st.text_input("Enter the file name (e.g., `app.py`)", key=generate_unique_key("file_name"))
+    if "code_input" not in st.session_state:
+        st.session_state.code_input = ""
+    if "file_name" not in st.session_state:
+        st.session_state.file_name = ""
+
+    code_input = st.text_area("Enter your Streamlit Python code here", height=200, key="code_input", value=st.session_state.code_input, on_change=lambda: st.session_state.update({"code_input": st.session_state.code_input}))
+    file_name = st.text_input("Enter the file name (e.g., `app.py`)", key="file_name", value=st.session_state.file_name, on_change=lambda: st.session_state.update({"file_name": st.session_state.file_name}))
 
     if st.button("Run Code", key=generate_unique_key("run_code_button")):
-        if code_input and file_name:
-            execute_code_in_memory(code_input)
+        if st.session_state.code_input and st.session_state.file_name:
+            execute_code_in_memory(st.session_state.code_input)
         else:
             st.error("Please enter the code and file name.")
 
