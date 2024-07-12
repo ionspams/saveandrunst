@@ -17,6 +17,10 @@ def install_package(package):
 
 def save_code_and_run_with_dependencies(code_input, directory, file_name):
     try:
+        # Ensure the file name has a .py extension
+        if not file_name.endswith(".py"):
+            file_name += ".py"
+
         # Save the code input to a .py file
         script_path = os.path.join(directory, file_name)
         with open(script_path, 'w', encoding='utf-8') as file:
@@ -52,8 +56,20 @@ def save_code_and_run_with_dependencies(code_input, directory, file_name):
             if package not in installed_packages:
                 install_package(package)
 
-        command = f'cmd /k "{activate_script} & streamlit run {script_path}"' if os.name == 'nt' else f'bash -c "source {activate_script} && streamlit run {script_path}"'
-        subprocess.Popen(command, shell=True, cwd=directory)
+        if os.name == 'nt':
+            command = f'{activate_script} & streamlit run {script_path}'
+        else:
+            command = f'source {activate_script} && streamlit run {script_path}'
+
+        st.write(f"Running command: {command}")
+
+        result = subprocess.Popen(command, shell=True, cwd=directory, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = result.communicate()
+        if out:
+            st.text_area("Command Output", out.decode('utf-8'))
+        if err:
+            st.text_area("Command Error", err.decode('utf-8'))
+
         st.success(f"Running Streamlit app: {script_path}")
     except Exception as e:
         st.error(f"Error while saving and running the script: {e}")
