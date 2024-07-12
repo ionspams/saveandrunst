@@ -3,6 +3,8 @@ import subprocess
 import sys
 import io
 import contextlib
+import os
+import tempfile
 import pkgutil
 import uuid
 
