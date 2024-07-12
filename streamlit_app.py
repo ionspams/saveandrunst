@@ -63,8 +63,8 @@ def save_code_and_run_with_dependencies(code_input, file_name):
 
         st.write(f"Running command: {command}")
 
-        result = subprocess.Popen(command, shell=True, cwd=temp_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = result.communicate()
+        result = subprocess.run(command, shell=True, cwd=temp_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = result.stdout, result.stderr
         if out:
             st.text_area("Command Output", out.decode('utf-8'))
         if err:
@@ -165,8 +165,8 @@ def run_script_with_dependencies():
 
         st.write(f"Running command: {command}")
 
-        result = subprocess.Popen(command, shell=True, cwd=temp_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = result.communicate()
+        result = subprocess.run(command, shell=True, cwd=temp_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = result.stdout, result.stderr
         if out:
             st.text_area("Command Output", out.decode('utf-8'))
         if err:
