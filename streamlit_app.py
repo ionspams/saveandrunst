@@ -39,7 +39,7 @@ def execute_code_in_memory(code_input):
         with io.StringIO() as buf, contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
             exec(code_input, {'__name__': '__main__'})
             output = buf.getvalue()
-        st.text_area("Output", output, height=400)
+        st.text_area("Output", output, height=400, key="output")
     except Exception as e:
         st.error(f"Error while executing the code: {e}")
 
