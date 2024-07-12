@@ -6,6 +6,10 @@ import contextlib
 import os
 import tempfile
 import pkgutil
+import uuid
+
+def generate_unique_key(prefix):
+    return f"{prefix}_{uuid.uuid4()}"
 
 def install_package(package):
     try:
@@ -39,7 +43,7 @@ def execute_code_in_memory(code_input):
         with io.StringIO() as buf, contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
             exec(code_input, {'__name__': '__main__'})
             output = buf.getvalue()
-        st.text_area("Output", output, height=400, key="output")
+        st.text_area("Output", output, height=400, key=generate_unique_key("output"))
     except Exception as e:
         st.error(f"Error while executing the code: {e}")
 
@@ -50,7 +54,7 @@ def main():
     option = st.sidebar.selectbox(
         "Choose an option",
         ["Save & Run Streamlit Code", "Edit Local Files", "Run Existing Script with Dependencies"],
-        key="unique_main_option"
+        key=generate_unique_key("main_option")
     )
 
     if option == "Save & Run Streamlit Code":
@@ -64,10 +68,10 @@ def save_and_run_workflow():
     st.header("Save & Run Streamlit Code")
     st.markdown("**Enter your Streamlit Python code below.** The code will be executed in-memory and the output will be displayed.")
     
-    code_input = st.text_area("Enter your Streamlit Python code here", height=200, key="unique_code_input")
-    file_name = st.text_input("Enter the file name (e.g., `app.py`)", key="unique_file_name")
+    code_input = st.text_area("Enter your Streamlit Python code here", height=200, key=generate_unique_key("code_input"))
+    file_name = st.text_input("Enter the file name (e.g., `app.py`)", key=generate_unique_key("file_name"))
 
-    if st.button("Run Code", key="unique_run_code_button"):
+    if st.button("Run Code", key=generate_unique_key("run_code_button")):
         if code_input and file_name:
             execute_code_in_memory(code_input)
         else:
@@ -77,12 +81,12 @@ def edit_files_workflow():
     st.header("Edit Local Files")
     st.markdown("**Edit the content of any local Python file.** Upload the file to edit.")
 
-    uploaded_file = st.file_uploader("Choose a file", key="unique_file_uploader")
+    uploaded_file = st.file_uploader("Choose a file", key=generate_unique_key("file_uploader"))
     if uploaded_file is not None:
         file_content = uploaded_file.read().decode('utf-8')
-        edited_content = st.text_area("File Content", file_content, height=400, key="unique_file_content")
+        edited_content = st.text_area("File Content", file_content, height=400, key=generate_unique_key("file_content"))
         
-        if st.button("Save File", key="unique_save_file_button"):
+        if st.button("Save File", key=generate_unique_key("save_file_button")):
             temp_dir = tempfile.mkdtemp()
             file_path = os.path.join(temp_dir, uploaded_file.name)
             with open(file_path, 'w', encoding='utf-8') as file:
@@ -93,7 +97,7 @@ def run_script_with_dependencies():
     st.header("Run Existing Script with Dependencies")
     st.markdown("**Upload and run an existing Python script.** The script will be run with all its dependencies.")
     
-    uploaded_file = st.file_uploader("Choose a .py file", key="unique_script_uploader")
+    uploaded_file = st.file_uploader("Choose a .py file", key=generate_unique_key("script_uploader"))
     if uploaded_file is not None:
         file_content = uploaded_file.read().decode('utf-8')
         temp_dir = tempfile.mkdtemp()
@@ -138,9 +142,9 @@ def run_script_with_dependencies():
         process = subprocess.Popen(command, shell=True, cwd=temp_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = process.communicate()
         if out:
-            st.text_area("Command Output", out.decode('utf-8'), key="unique_command_output")
+            st.text_area("Command Output", out.decode('utf-8'), key=generate_unique_key("command_output"))
         if err:
-            st.text_area("Command Error", err.decode('utf-8'), key="unique_command_error")
+            st.text_area("Command Error", err.decode('utf-8'), key=generate_unique_key("command_error"))
 
         st.success(f"Running script: {script_path}")
 
