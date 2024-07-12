@@ -3,43 +3,14 @@ import subprocess
 import sys
 import io
 import contextlib
-import os
-import tempfile
 import pkgutil
 import uuid
 
 def generate_unique_key(prefix):
     return f"{prefix}_{uuid.uuid4()}"
 
-def install_package(package):
-    try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", package])
-    except subprocess.CalledProcessError as e:
-        st.error(f"Error installing package {package}: {e}")
-        raise
-
 def execute_code_in_memory(code_input):
     try:
-        import_lines = [line for line in code_input.split('\n') if line.startswith('import ') or line.startswith('from ')]
-        required_packages = set()
-        for line in import_lines:
-            parts = line.split()
-            if parts[0] == "import":
-                package_name = parts[1]
-            elif parts[0] == "from":
-                package_name = parts[1]
-            if "." in package_name:
-                package_name = package_name.split(".")[0]
-            if not pkgutil.find_loader(package_name):
-                required_packages.add(package_name)
-
-        installed_packages = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'], text=True).split('\n')
-        installed_packages = {pkg.split('==')[0] for pkg in installed_packages}
-
-        for package in required_packages:
-            if package not in installed_packages:
-                install_package(package)
-
         with io.StringIO() as buf, contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
             exec(code_input, {'__name__': '__main__'})
             output = buf.getvalue()
@@ -139,7 +110,8 @@ def run_script_with_dependencies():
 
         for package in required_packages:
             if package not in installed_packages:
-                install_package(package)
+                st.error(f"Required package {package} is not installed in the environment.")
+                return
 
         if os.name == 'nt':
             command = f'{activate_script} & python {script_path}'
