@@ -54,44 +54,50 @@ def save_code_and_run_with_dependencies(code_input, directory, file_name):
 
         command = f'cmd /k "{activate_script} & streamlit run {script_path}"' if os.name == 'nt' else f'bash -c "source {activate_script} && streamlit run {script_path}"'
         subprocess.Popen(command, shell=True, cwd=directory)
-        st.success(f"Running script: {script_path}")
+        st.success(f"Running Streamlit app: {script_path}")
     except Exception as e:
         st.error(f"Error while saving and running the script: {e}")
 
 def main():
-    st.title("Enhanced Python Code Runner and File Editor")
+    st.title("Streamlit App Code Runner and File Editor")
 
     # Navigation
     option = st.sidebar.selectbox(
         "Choose an option",
-        ["Save & Run .py", "Edit Local Files", "Run Script with Dependencies"]
+        ["Save & Run Streamlit Code", "Edit Local Files", "Run Existing Script with Dependencies"]
     )
 
-    if option == "Save & Run .py":
+    if option == "Save & Run Streamlit Code":
         save_and_run_workflow()
     elif option == "Edit Local Files":
         edit_files_workflow()
-    elif option == "Run Script with Dependencies":
+    elif option == "Run Existing Script with Dependencies":
         run_script_with_dependencies()
 
 def save_and_run_workflow():
-    st.header("Save & Run .py")
-    code_input = st.text_area("Enter Python Code Here", height=200)
+    st.header("Save & Run Streamlit Code")
+    st.markdown("**Enter your Streamlit Python code below.** The code will be saved as a `.py` file in the specified directory and run as a Streamlit app.")
+    
+    code_input = st.text_area("Enter your Streamlit Python code here", height=200)
     directory = st.text_input("Enter the directory path to save the .py file")
-    file_name = st.text_input("Enter the file name (e.g., script.py)")
+    file_name = st.text_input("Enter the file name (e.g., `app.py`)")
 
     if st.button("Save & Run"):
         if code_input and directory and file_name:
-            save_code_and_run_with_dependencies(code_input, directory, file_name)
+            if os.path.isdir(directory):
+                save_code_and_run_with_dependencies(code_input, directory, file_name)
+            else:
+                st.error("Directory not found. Please enter a valid directory path.")
         else:
             st.error("Please enter the code, directory path, and file name.")
 
 def edit_files_workflow():
     st.header("Edit Local Files")
+    st.markdown("**Edit the content of any local Python file.** Enter the directory path and select the file to edit.")
     
     # Directory selector
-    directory = st.text_input("Enter the directory path")
-    
+    directory = st.text_input("Enter the directory path containing the files")
+
     if st.button("Load Directory"):
         if os.path.isdir(directory):
             files = [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f))]
@@ -120,7 +126,8 @@ def edit_files_workflow():
             del st.session_state['file_content']
 
 def run_script_with_dependencies():
-    st.header("Run Script with Dependencies")
+    st.header("Run Existing Script with Dependencies")
+    st.markdown("**Select and run an existing Python script from a specified directory.** The script will be run with all its dependencies.")
     
     # Directory selector
     directory = st.text_input("Enter the directory path containing .py files")
