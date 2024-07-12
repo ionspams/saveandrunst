@@ -54,7 +54,7 @@ def main():
     option = st.sidebar.selectbox(
         "Choose an option",
         ["Save & Run Streamlit Code", "Edit Local Files", "Run Existing Script with Dependencies"],
-        key=generate_unique_key("main_option")
+        key="main_option"
     )
 
     if option == "Save & Run Streamlit Code":
@@ -88,7 +88,7 @@ def edit_files_workflow():
     st.header("Edit Local Files")
     st.markdown("**Edit the content of any local Python file.** Upload the file to edit.")
 
-    uploaded_file = st.file_uploader("Choose a file", key=generate_unique_key("file_uploader"))
+    uploaded_file = st.file_uploader("Choose a file", key="file_uploader")
     if uploaded_file is not None:
         file_content = uploaded_file.read().decode('utf-8')
         edited_content = st.text_area("File Content", file_content, height=400, key=generate_unique_key("file_content"))
@@ -104,7 +104,7 @@ def run_script_with_dependencies():
     st.header("Run Existing Script with Dependencies")
     st.markdown("**Upload and run an existing Python script.** The script will be run with all its dependencies.")
     
-    uploaded_file = st.file_uploader("Choose a .py file", key=generate_unique_key("script_uploader"))
+    uploaded_file = st.file_uploader("Choose a .py file", key="script_uploader")
     if uploaded_file is not None:
         file_content = uploaded_file.read().decode('utf-8')
         temp_dir = tempfile.mkdtemp()
