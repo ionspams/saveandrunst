@@ -6,7 +6,6 @@ import contextlib
 import os
 import tempfile
 import pkgutil
-import time
 
 def install_package(package):
     try:
@@ -15,29 +14,9 @@ def install_package(package):
         st.error(f"Error installing package {package}: {e}")
         raise
 
-def save_code_and_run_with_dependencies(code_input, file_name):
+def execute_code_in_memory(code_input):
     try:
-        # Use temporary directory to save the code
-        temp_dir = tempfile.mkdtemp()
-        # Ensure the file name has a .py extension
-        if not file_name.endswith(".py"):
-            file_name += ".py"
-        script_path = os.path.join(temp_dir, file_name)
-        
-        with open(script_path, 'w', encoding='utf-8') as file:
-            file.write(code_input)
-        
-        # Run the script with dependencies
-        venv_path = os.path.join(temp_dir, "venv")
-        if not os.path.exists(venv_path):
-            subprocess.check_call([sys.executable, "-m", "venv", "venv"], cwd=temp_dir)
-        
-        activate_script = os.path.join(venv_path, "Scripts", "activate") if os.name == 'nt' else os.path.join(venv_path, "bin", "activate")
-
-        with open(script_path, 'r', encoding='utf-8') as file:
-            code_content = file.read()
-
-        import_lines = [line for line in code_content.split('\n') if line.startswith('import ') or line.startswith('from ')]
+        import_lines = [line for line in code_input.split('\n') if line.startswith('import ') or line.startswith('from ')]
         required_packages = set()
         for line in import_lines:
             parts = line.split()
@@ -57,19 +36,12 @@ def save_code_and_run_with_dependencies(code_input, file_name):
             if package not in installed_packages:
                 install_package(package)
 
-        if os.name == 'nt':
-            command = f'{activate_script} & streamlit run {script_path}'
-        else:
-            command = f'bash -c ". {activate_script} && streamlit run {script_path}"'
-
-        st.write(f"Running command: {command}")
-
-        process = subprocess.Popen(command, shell=True, cwd=temp_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        time.sleep(5)  # Allow some time for the app to start
-        url = f"http://localhost:8501"
-        st.write(f"Your app is running at [this link]({url})")
+        with io.StringIO() as buf, contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+            exec(code_input, {'__name__': '__main__'})
+            output = buf.getvalue()
+        st.text_area("Output", output, height=400)
     except Exception as e:
-        st.error(f"Error while saving and running the script: {e}")
+        st.error(f"Error while executing the code: {e}")
 
 def main():
     st.title("Streamlit App Code Runner and File Editor")
@@ -92,13 +64,12 @@ def save_and_run_workflow():
     st.markdown("**Enter your Streamlit Python code below.** The code will be executed in-memory and the output will be displayed.")
     
     code_input = st.text_area("Enter your Streamlit Python code here", height=200)
-    file_name = st.text_input("Enter the file name (e.g., `app.py`)")
 
     if st.button("Run Code"):
-        if code_input and file_name:
-            save_code_and_run_with_dependencies(code_input, file_name)
+        if code_input:
+            execute_code_in_memory(code_input)
         else:
-            st.error("Please enter the code and file name.")
+            st.error("Please enter the code.")
 
 def edit_files_workflow():
     st.header("Edit Local Files")
@@ -117,58 +88,59 @@ def edit_files_workflow():
             st.success(f"File saved: {file_path}")
 
 def run_script_with_dependencies():
-    try:
-        st.header("Run Existing Script with Dependencies")
-        st.markdown("**Upload and run an existing Python script.** The script will be run with all its dependencies.")
+    st.header("Run Existing Script with Dependencies")
+    st.markdown("**Upload and run an existing Python script.** The script will be run with all its dependencies.")
+    
+    uploaded_file = st.file_uploader("Choose a .py file")
+    if uploaded_file is not None:
+        file_content = uploaded_file.read().decode('utf-8')
+        temp_dir = tempfile.mkdtemp()
+        script_path = os.path.join(temp_dir, uploaded_file.name)
+
+        with open(script_path, 'w', encoding='utf-8') as file:
+            file.write(file_content)
         
-        uploaded_file = st.file_uploader("Choose a .py file")
-        if uploaded_file is not None:
-            file_content = uploaded_file.read().decode('utf-8')
-            temp_dir = tempfile.mkdtemp()
-            script_path = os.path.join(temp_dir, uploaded_file.name)
+        venv_path = os.path.join(temp_dir, "venv")
+        if not os.path.exists(venv_path):
+            subprocess.check_call([sys.executable, "-m", "venv", "venv"], cwd=temp_dir)
+        
+        activate_script = os.path.join(venv_path, "Scripts", "activate") if os.name == 'nt' else os.path.join(venv_path, "bin", "activate")
 
-            with open(script_path, 'w', encoding='utf-8') as file:
-                file.write(file_content)
-            
-            venv_path = os.path.join(temp_dir, "venv")
-            if not os.path.exists(venv_path):
-                subprocess.check_call([sys.executable, "-m", "venv", "venv"], cwd=temp_dir)
-            
-            activate_script = os.path.join(venv_path, "Scripts", "activate") if os.name == 'nt' else os.path.join(venv_path, "bin", "activate")
+        import_lines = [line for line in file_content.split('\n') if line.startswith('import ') or line.startswith('from ')]
+        required_packages = set()
+        for line in import_lines:
+            parts = line.split()
+            if parts[0] == "import":
+                package_name = parts[1]
+            elif parts[0] == "from":
+                package_name = parts[1]
+            if "." in package_name:
+                package_name = package_name.split(".")[0]
+            if not pkgutil.find_loader(package_name):
+                required_packages.add(package_name)
 
-            import_lines = [line for line in file_content.split('\n') if line.startswith('import ') or line.startswith('from ')]
-            required_packages = set()
-            for line in import_lines:
-                parts = line.split()
-                if parts[0] == "import":
-                    package_name = parts[1]
-                elif parts[0] == "from":
-                    package_name = parts[1]
-                if "." in package_name:
-                    package_name = package_name.split(".")[0]
-                if not pkgutil.find_loader(package_name):
-                    required_packages.add(package_name)
+        installed_packages = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'], text=True).split('\n')
+        installed_packages = {pkg.split('==')[0] for pkg in installed_packages}
 
-            installed_packages = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'], text=True).split('\n')
-            installed_packages = {pkg.split('==')[0] for pkg in installed_packages}
+        for package in required_packages:
+            if package not in installed_packages:
+                install_package(package)
 
-            for package in required_packages:
-                if package not in installed_packages:
-                    install_package(package)
+        if os.name == 'nt':
+            command = f'{activate_script} & python {script_path}'
+        else:
+            command = f'bash -c ". {activate_script} && python {script_path}"'
 
-            if os.name == 'nt':
-                command = f'{activate_script} & streamlit run {script_path}'
-            else:
-                command = f'bash -c ". {activate_script} && streamlit run {script_path}"'
+        st.write(f"Running command: {command}")
 
-            st.write(f"Running command: {command}")
+        process = subprocess.Popen(command, shell=True, cwd=temp_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = process.communicate()
+        if out:
+            st.text_area("Command Output", out.decode('utf-8'))
+        if err:
+            st.text_area("Command Error", err.decode('utf-8'))
 
-            process = subprocess.Popen(command, shell=True, cwd=temp_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            time.sleep(5)  # Allow some time for the app to start
-            url = f"http://localhost:8501"
-            st.write(f"Your app is running at [this link]({url})")
-    except Exception as e:
-        st.error(f"Error while saving and running the script: {e}")
+        st.success(f"Running script: {script_path}")
 
 if __name__ == "__main__":
     main()
