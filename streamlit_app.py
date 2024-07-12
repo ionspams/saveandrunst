@@ -54,7 +54,7 @@ def main():
     option = st.sidebar.selectbox(
         "Choose an option",
         ["Save & Run Streamlit Code", "Edit Local Files", "Run Existing Script with Dependencies"],
-        key=generate_unique_key("main_option")
+        key="main_option"
     )
 
     if option == "Save & Run Streamlit Code":
@@ -73,12 +73,14 @@ def save_and_run_workflow():
     if "file_name" not in st.session_state:
         st.session_state.file_name = ""
 
-    code_input = st.text_area("Enter your Streamlit Python code here", height=200, key="code_input", value=st.session_state.code_input, on_change=lambda: st.session_state.update({"code_input": st.session_state.code_input}))
-    file_name = st.text_input("Enter the file name (e.g., `app.py`)", key="file_name", value=st.session_state.file_name, on_change=lambda: st.session_state.update({"file_name": st.session_state.file_name}))
+    code_input = st.text_area("Enter your Streamlit Python code here", height=200, key="code_input")
+    file_name = st.text_input("Enter the file name (e.g., `app.py`)", key="file_name")
 
-    if st.button("Run Code", key=generate_unique_key("run_code_button")):
-        if st.session_state.code_input and st.session_state.file_name:
-            execute_code_in_memory(st.session_state.code_input)
+    if st.button("Run Code", key="run_code_button"):
+        st.session_state.code_input = code_input
+        st.session_state.file_name = file_name
+        if code_input and file_name:
+            execute_code_in_memory(code_input)
         else:
             st.error("Please enter the code and file name.")
 
@@ -86,7 +88,7 @@ def edit_files_workflow():
     st.header("Edit Local Files")
     st.markdown("**Edit the content of any local Python file.** Upload the file to edit.")
 
-    uploaded_file = st.file_uploader("Choose a file", key=generate_unique_key("file_uploader"))
+    uploaded_file = st.file_uploader("Choose a file", key="file_uploader")
     if uploaded_file is not None:
         file_content = uploaded_file.read().decode('utf-8')
         edited_content = st.text_area("File Content", file_content, height=400, key=generate_unique_key("file_content"))
@@ -102,7 +104,7 @@ def run_script_with_dependencies():
     st.header("Run Existing Script with Dependencies")
     st.markdown("**Upload and run an existing Python script.** The script will be run with all its dependencies.")
     
-    uploaded_file = st.file_uploader("Choose a .py file", key=generate_unique_key("script_uploader"))
+    uploaded_file = st.file_uploader("Choose a .py file", key="script_uploader")
     if uploaded_file is not None:
         file_content = uploaded_file.read().decode('utf-8')
         temp_dir = tempfile.mkdtemp()
