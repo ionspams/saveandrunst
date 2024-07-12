@@ -59,7 +59,7 @@ def save_code_and_run_with_dependencies(code_input, file_name):
         if os.name == 'nt':
             command = f'{activate_script} & streamlit run {script_path}'
         else:
-            command = f'source {activate_script} && streamlit run {script_path}'
+            command = f'bash -c ". {activate_script} && streamlit run {script_path}"'
 
         st.write(f"Running command: {command}")
 
@@ -92,12 +92,12 @@ def main():
 
 def save_and_run_workflow():
     st.header("Save & Run Streamlit Code")
-    st.markdown("**Enter your Streamlit Python code below.** The code will be saved as a `.py` file and run as a Streamlit app.")
+    st.markdown("**Enter your Streamlit Python code below.** The code will be executed in-memory and the output will be displayed.")
     
     code_input = st.text_area("Enter your Streamlit Python code here", height=200)
     file_name = st.text_input("Enter the file name (e.g., `app.py`)")
 
-    if st.button("Save & Run"):
+    if st.button("Run Code"):
         if code_input and file_name:
             save_code_and_run_with_dependencies(code_input, file_name)
         else:
@@ -161,7 +161,7 @@ def run_script_with_dependencies():
         if os.name == 'nt':
             command = f'{activate_script} & streamlit run {script_path}'
         else:
-            command = f'source {activate_script} && streamlit run {script_path}'
+            command = f'bash -c ". {activate_script} && streamlit run {script_path}"'
 
         st.write(f"Running command: {command}")
 
