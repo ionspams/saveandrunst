@@ -3,9 +3,6 @@ import subprocess
 import sys
 import io
 import contextlib
-import os
-import tempfile
-import pkgutil
 import uuid
 
 def generate_unique_key(prefix):
@@ -21,41 +18,33 @@ def execute_code_in_memory(code_input):
         st.error(f"Error while executing the code: {e}")
 
 def main():
-    st.title("Streamlit App Code Runner and File Editor")
+    st.title("Streamlit App Code Runner")
 
     # Navigation
     option = st.sidebar.selectbox(
         "Choose an option",
-        ["Save & Run Streamlit Code", "Edit Local Files", "Run Existing Script with Dependencies"],
+        ["Run Streamlit Code", "Edit Local Files", "Run Existing Script with Dependencies"],
         key="main_option"
     )
 
-    if option == "Save & Run Streamlit Code":
-        save_and_run_workflow()
+    if option == "Run Streamlit Code":
+        run_code_workflow()
     elif option == "Edit Local Files":
         edit_files_workflow()
     elif option == "Run Existing Script with Dependencies":
-        run_script_with_dependencies()
+        run_script_workflow()
 
-def save_and_run_workflow():
-    st.header("Save & Run Streamlit Code")
+def run_code_workflow():
+    st.header("Run Streamlit Code")
     st.markdown("**Enter your Streamlit Python code below.** The code will be executed in-memory and the output will be displayed.")
     
-    if "code_input" not in st.session_state:
-        st.session_state.code_input = ""
-    if "file_name" not in st.session_state:
-        st.session_state.file_name = ""
-
     code_input = st.text_area("Enter your Streamlit Python code here", height=200, key="code_input")
-    file_name = st.text_input("Enter the file name (e.g., `app.py`)", key="file_name")
 
     def run_code():
-        st.session_state.code_input = code_input
-        st.session_state.file_name = file_name
-        if code_input and file_name:
+        if code_input:
             execute_code_in_memory(code_input)
         else:
-            st.error("Please enter the code and file name.")
+            st.error("Please enter the code.")
 
     st.button("Run Code", on_click=run_code, key="run_code_button")
 
@@ -75,7 +64,7 @@ def edit_files_workflow():
                 file.write(edited_content)
             st.success(f"File saved: {file_path}")
 
-def run_script_with_dependencies():
+def run_script_workflow():
     st.header("Run Existing Script with Dependencies")
     st.markdown("**Upload and run an existing Python script.** The script will be run with all its dependencies.")
     
@@ -87,49 +76,17 @@ def run_script_with_dependencies():
 
         with open(script_path, 'w', encoding='utf-8') as file:
             file.write(file_content)
-        
-        venv_path = os.path.join(temp_dir, "venv")
-        if not os.path.exists(venv_path):
-            subprocess.check_call([sys.executable, "-m", "venv", "venv"], cwd=temp_dir)
-        
-        activate_script = os.path.join(venv_path, "Scripts", "activate") if os.name == 'nt' else os.path.join(venv_path, "bin", "activate")
 
-        import_lines = [line for line in file_content.split('\n') if line.startswith('import ') or line.startswith('from ')]
-        required_packages = set()
-        for line in import_lines:
-            parts = line.split()
-            if parts[0] == "import":
-                package_name = parts[1]
-            elif parts[0] == "from":
-                package_name = parts[1]
-            if "." in package_name:
-                package_name = package_name.split(".")[0]
-            if not pkgutil.find_loader(package_name):
-                required_packages.add(package_name)
+        def run_script():
+            try:
+                with io.StringIO() as buf, contextlib.redirect_stdout(buf), contextlib.redirect_stderr(buf):
+                    exec(file_content, {'__name__': '__main__'})
+                    output = buf.getvalue()
+                st.text_area("Script Output", output, height=400, key=generate_unique_key("output"))
+            except Exception as e:
+                st.error(f"Error while executing the script: {e}")
 
-        installed_packages = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'], text=True).split('\n')
-        installed_packages = {pkg.split('==')[0] for pkg in installed_packages}
-
-        for package in required_packages:
-            if package not in installed_packages:
-                st.error(f"Required package {package} is not installed in the environment.")
-                return
-
-        if os.name == 'nt':
-            command = f'{activate_script} & python {script_path}'
-        else:
-            command = f'bash -c ". {activate_script} && python {script_path}"'
-
-        st.write(f"Running command: {command}")
-
-        process = subprocess.Popen(command, shell=True, cwd=temp_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        out, err = process.communicate()
-        if out:
-            st.text_area("Command Output", out.decode('utf-8'), key=generate_unique_key("command_output"))
-        if err:
-            st.text_area("Command Error", err.decode('utf-8'), key=generate_unique_key("command_error"))
-
-        st.success(f"Running script: {script_path}")
+        st.button("Run Script", on_click=run_script, key=generate_unique_key("run_script_button"))
 
 if __name__ == "__main__":
     main()
