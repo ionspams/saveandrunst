@@ -74,7 +74,10 @@ def save_code_and_run_with_dependencies(code_input, file_name):
         st.write(f"Running command: {command}")
 
         process = subprocess.Popen(command, shell=True, cwd=temp_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        time.sleep(5)  # Allow some time for the app to start
+        
+        # Give the Streamlit server time to start
+        time.sleep(10)
+
         url = f"http://localhost:{free_port}"
         st.write(f"Your app is running at [this link]({url})")
     except Exception as e:
@@ -176,7 +179,10 @@ def run_script_with_dependencies():
             st.write(f"Running command: {command}")
 
             process = subprocess.Popen(command, shell=True, cwd=temp_dir, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-            time.sleep(5)  # Allow some time for the app to start
+            
+            # Give the Streamlit server time to start
+            time.sleep(10)
+
             url = f"http://localhost:{free_port}"
             st.write(f"Your app is running at [this link]({url})")
     except Exception as e:
