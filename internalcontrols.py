@@ -25,7 +25,8 @@ def authenticate_gsheets():
         "client_x509_cert_url": os.getenv("CLIENT_X509_CERT_URL"),
         "universe_domain": os.getenv("UNIVERSE_DOMAIN")
     }
-    creds = Credentials.from_service_account_info(creds_info)
+    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    creds = Credentials.from_service_account_info(creds_info, scopes=scope)
     client = gspread.authorize(creds)
     return client
 
