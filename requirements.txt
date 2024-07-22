@@ -10,3 +10,6 @@ pydeck==0.8.1b0    # Include if your code uses pydeck
 qrcode==7.3.1
 Pillow==10.0.0
 segno==1.4.0
+gspread
+hashlib
+base64
