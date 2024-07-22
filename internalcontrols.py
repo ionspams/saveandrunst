@@ -1,14 +1,14 @@
 import streamlit as st
 import gspread
-from oauth2client.service_account import ServiceAccountCredentials
+from google.oauth2.service_account import Credentials
 from datetime import datetime
 import hashlib
 import base64
 
 # Function to initialize Google Sheets client
 def authenticate_gsheets(json_keyfile_name):
-    scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
-    creds = ServiceAccountCredentials.from_json_keyfile_name(json_keyfile_name, scope)
+    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
+    creds = Credentials.from_service_account_file(json_keyfile_name, scopes=scope)
     client = gspread.authorize(creds)
     return client
 
@@ -45,16 +45,9 @@ def flatten_data(data):
             flat_data.append(value)
     return flat_data
 
-# Function to set headers if not already set
-def set_headers(sheet):
-    headers = ["form_id", "purchase_category", "num_items", "items", "projected_price", "projected_amount", "num_lots", "tender_description", "tender_deadline", "tender_process_owner", "lots", "public_url"]
-    current_headers = sheet.row_values(1)
-    if current_headers != headers:
-        sheet.insert_row(headers, 1)
-
 # Function to list tenders
 def list_tenders(sheet):
-    records = sheet.get_all_records(expected_headers=["form_id", "purchase_category", "num_items", "public_url"])
+    records = sheet.get_all_records()
     tenders = []
     for record in records:
         tenders.append({
@@ -79,38 +72,11 @@ def main():
     st.title("Procurement Wizard Form")
 
     # Authenticate Google Sheets
-    json_keyfile_name = 'docstreamerAPI.json'  # Path to the JSON keyfile
+    json_keyfile_name = r'docstreamerAPI.json'  # Hardcoded path for the JSON keyfile
     client = authenticate_gsheets(json_keyfile_name)
     spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1iSlsgQrc0-RQ1gFSmyhmXE6x2TKrHgiKRDSDuoX3mEY'
     sheet_name = 'Procurement Data'
     sheet = open_sheet(client, spreadsheet_url, sheet_name)
-
-    # Set headers if not already set
-    set_headers(sheet)
-
-    # Initialize session state
-    if 'step' not in st.session_state:
-        st.session_state['step'] = 1
-    if 'purchase_category' not in st.session_state:
-        st.session_state['purchase_category'] = None
-    if 'num_items' not in st.session_state:
-        st.session_state['num_items'] = None
-    if 'items' not in st.session_state:
-        st.session_state['items'] = None
-    if 'projected_price' not in st.session_state:
-        st.session_state['projected_price'] = None
-    if 'projected_amount' not in st.session_state:
-        st.session_state['projected_amount'] = None
-    if 'num_lots' not in st.session_state:
-        st.session_state['num_lots'] = None
-    if 'tender_description' not in st.session_state:
-        st.session_state['tender_description'] = None
-    if 'tender_deadline' not in st.session_state:
-        st.session_state['tender_deadline'] = None
-    if 'tender_process_owner' not in st.session_state:
-        st.session_state['tender_process_owner'] = None
-    if 'lots' not in st.session_state:
-        st.session_state['lots'] = None
 
     # Get current port
     port = st.query_params.get('port', ['8501'])[0]
@@ -122,6 +88,10 @@ def main():
     choice = st.sidebar.radio("Go to", options)
 
     if choice == "Create Tender":
+        # Initialize session state
+        if 'step' not in st.session_state:
+            st.session_state['step'] = 1
+
         def reset_form():
             for key in list(st.session_state.keys()):
                 if key != 'step':
@@ -240,82 +210,4 @@ def main():
             if 'projected_price' in st.session_state:
                 st.write(f"Projected Price: {st.session_state['projected_price']}")
             
-            if 'projected_amount' in st.session_state:
-                st.write(f"Projected Amount: {st.session_state['projected_amount']}")
-                st.write(f"Tender Description: {st.session_state['tender_description']}")
-                st.write(f"Tender Deadline: {st.session_state['tender_deadline']}")
-                st.write(f"Tender Process Owner: {st.session_state['tender_process_owner']}")
-                for lot in st.session_state['lots']:
-                    st.write(f"Lot Name: {lot['lot_name']}")
-                    for product in lot['products']:
-                        st.write(product)
-            
-            if st.button("Submit"):
-                data = {
-                    'form_id': hashlib.sha256(str(st.session_state).encode()).hexdigest(),
-                    'purchase_category': st.session_state.get('purchase_category'),
-                    'num_items': st.session_state.get('num_items'),
-                    'items': st.session_state.get('items'),
-                    'projected_price': st.session_state.get('projected_price'),
-                    'projected_amount': st.session_state.get('projected_amount'),
-                    'num_lots': st.session_state.get('num_lots'),
-                    'tender_description': st.session_state.get('tender_description'),
-                    'tender_deadline': st.session_state.get('tender_deadline').strftime('%Y-%m-%d') if st.session_state.get('tender_deadline') else None,
-                    'tender_process_owner': st.session_state.get('tender_process_owner'),
-                    'lots': st.session_state.get('lots')
-                }
-                flat_data = flatten_data(data)
-                append_row(sheet, flat_data)
-                
-                form_id = hashlib.sha256(str(data).encode()).hexdigest()
-                form_url = generate_form_url(base_url, form_id)
-                st.success("Procurement data submitted successfully!")
-                st.write(f"Public form URL: {form_url}")
-                reset_form()
-
-    # Handling public form submission
-    elif 'form_id' in st.query_params:
-        form_id = st.query_params.get('form_id')[0]
-        st.header(f"Tender ID: {form_id}")
-        st.write("Submit your offer below:")
-        
-        offer_name = st.text_input("Offer Name")
-        offer_description = st.text_area("Offer Description")
-        offer_price = st.number_input("Offer Price", min_value=0.01, step=0.01)
-        
-        if st.button("Submit Offer"):
-            offer_data = {
-                'form_id': form_id,
-                'offer_name': offer_name,
-                'offer_description': offer_description,
-                'offer_price': offer_price
-            }
-            flat_offer_data = flatten_data(offer_data)
-            append_row(sheet, flat_offer_data)
-            st.success("Offer submitted successfully!")
-
-    elif choice == "View Tenders":
-        # View tenders
-        st.header("View Tenders")
-        tenders = list_tenders(sheet)
-        for tender in tenders:
-            st.subheader(f"Tender ID: {tender['id']}")
-            st.write(f"Category: {tender['category']}")
-            st.write(f"Number of Items: {tender['num_items']}")
-            st.write(f"Public URL: {tender['public_url']}")
-
-    elif choice == "Review Offers":
-        # Review offers
-        st.header("Review Offers")
-        form_id = st.text_input("Enter the Tender ID to review offers:")
-        if st.button("Review Offers"):
-            offers = view_offers(sheet, form_id)
-            if offers:
-                st.write(f"Offers for Tender ID: {form_id}")
-                for offer in offers:
-                    st.write(offer)
-            else:
-                st.write(f"No offers found for Tender ID: {form_id}")
-
-if __name__ == "__main__":
-    main()
+            if
