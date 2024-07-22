@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "ukraine-crisis-moldova-377914",
+  "private_key_id": "393fea20a22a208857697914ff55712df9fe3d07",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCtutzW/NFThdzh\n35+zvysD5/as4PdvDZD9EOwq+FWhZFsylUgE3cQQPoe12OzFinp+kWzn6Y9baZ9v\nknAmBeAJKl4tOCA9M5HwwdMdFAt7etOpOv/ntHBU9FpUKkA1re0tHLdyAoU0QrKv\nekr56hVN/6LH8F63hgAVjbWM5nB1uTJuUMHtziihH0MlzBkL8aKDiQ52/IDMsuYN\npyX8A7bPhwtm1cRSFbE9ywDFBU82FF9SGH8o541JTdrQyQB9fLFmyAUhwknHRf5M\n368+o6qWMEzySXV8IdW1LWff2yhK5HINyosiNZjaOBFqTheL4fu9sR6Z9Mc+N+2V\nkNH4pgVfAgMBAAECggEAUyA8Fuo1Rp+ghrs3cQwhiubs0t95xTtaipwURKM6ZdTd\nBiEDqsBp1dP1n39CG2sdHX57+6N3oqexT/Njke3xurD5Cu32DxKj2+0CFMHIlLa6\nnBjM5ZMixKN+rRLiUkz8VT+OTxEBp3XahbggM+BbfUy6GKzcxTdqxuVdXyPL36eJ\nsXCHpP5EZj3k+XXVzm4SRkiD8waSOYR00ujyHPWi6jniCQVliFQDd+IzUcA7UtQL\nzwAnmePnRCLIEFigOIN7ZMc09JqHRDxsnuh+lHYJPBzFcgSl/EK2sKerrGqPSsTq\naaV0tSf8gvZWxfpyW4tTdnezFE7tiaUojys8yXE3YQKBgQDV/dhMLuVU/db8ucbq\n15GrebKSDNIKeRtMv2yS8CxGaGlhsDjbzaDyt+9VM8MjWGWZqNDGIqYVcHpA65Ej\n2wwpR1qRSSY1mA/Cv2x74wFOGdWfA92VJCkULlLWaXsnvbcN+tll0MQsMdhsJYMc\nj/VRtne7hmumRBdQxb9onTldlwKBgQDP1arBn7VNRinttASp+1PLklBFfhTNOJ0M\nqkC85QRCYGHky6GSzMZJKUA0nxdzHF6Q3Zw+5NInVdzbdSw7Y/TVtZIs54VeRc/N\ngplxp/oXgCRk04uiKSvSIxbhLEMjK+EuNGohVEdE9Se9/G96WwTSHTU6KMtKFdAy\nlPmgcNifeQKBgQCB1mdqsfmLvAi5hq7exrUn6csjOowmtpyN0Ie8D+WNQsTN9PJK\ny1Ugb+HTPHjl9TiQJxGlZliHIZvL0CJcMwgJ87VL+aopUn4dl6/m6zFbhelLdjj3\nyNzz1beFSLLkxgNPhChr0mN0vTmnRItsxRv/3EqBiWm/lAjhhVpBy0OHOQKBgDy+\nA+QHG2P0R7jTTjGn5LuwjYlh6g54p13WPIl4naAQr0vBP/25n5IuXjeC78WS2wiX\n3Fx9X/ZjH+N8AWtyMVJseMZq/A2rdapoqxQOtgc8Sma1dS/1vHr0CnHRD+Ytouhw\nJTyMdy/uPqlGKAaop2YJZ08SMSf77Bd8duCvWoBxAoGAZ6owXWxPazEmXWqfgXXk\nYCmHFQPm5gLaBhGeHxZCnKCCa/Vq7nG9p0AYNQSsuwO8NeP0F26InT2DGi/7ZxTW\nVw+xT+7He1Orpe8lv5hil+gWQImoJEYhRURvGb0d2lSyuYWpzpBvpjkWv7Mx5sW4\ng9tCNRpTlXikR4BmTtCkpzo=\n-----END PRIVATE KEY-----\n",
+  "client_email": "docstreamer@ukraine-crisis-moldova-377914.iam.gserviceaccount.com",
+  "client_id": "107023917229618002833",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/docstreamer%40ukraine-crisis-moldova-377914.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
