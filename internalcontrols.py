@@ -45,9 +45,16 @@ def flatten_data(data):
             flat_data.append(value)
     return flat_data
 
+# Function to set headers if not already set
+def set_headers(sheet):
+    headers = ["form_id", "purchase_category", "num_items", "items", "projected_price", "projected_amount", "num_lots", "tender_description", "tender_deadline", "tender_process_owner", "lots", "public_url"]
+    current_headers = sheet.row_values(1)
+    if current_headers != headers:
+        sheet.insert_row(headers, 1)
+
 # Function to list tenders
 def list_tenders(sheet):
-    records = sheet.get_all_records()
+    records = sheet.get_all_records(expected_headers=["form_id", "purchase_category", "num_items", "public_url"])
     tenders = []
     for record in records:
         tenders.append({
@@ -72,11 +79,38 @@ def main():
     st.title("Procurement Wizard Form")
 
     # Authenticate Google Sheets
-    json_keyfile_name = r'docstreamerAPI.json'  # Hardcoded path for the JSON keyfile
+    json_keyfile_name = 'docstreamerAPI.json'  # Path to the JSON keyfile
     client = authenticate_gsheets(json_keyfile_name)
     spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1iSlsgQrc0-RQ1gFSmyhmXE6x2TKrHgiKRDSDuoX3mEY'
     sheet_name = 'Procurement Data'
     sheet = open_sheet(client, spreadsheet_url, sheet_name)
+
+    # Set headers if not already set
+    set_headers(sheet)
+
+    # Initialize session state
+    if 'step' not in st.session_state:
+        st.session_state['step'] = 1
+    if 'purchase_category' not in st.session_state:
+        st.session_state['purchase_category'] = None
+    if 'num_items' not in st.session_state:
+        st.session_state['num_items'] = None
+    if 'items' not in st.session_state:
+        st.session_state['items'] = None
+    if 'projected_price' not in st.session_state:
+        st.session_state['projected_price'] = None
+    if 'projected_amount' not in st.session_state:
+        st.session_state['projected_amount'] = None
+    if 'num_lots' not in st.session_state:
+        st.session_state['num_lots'] = None
+    if 'tender_description' not in st.session_state:
+        st.session_state['tender_description'] = None
+    if 'tender_deadline' not in st.session_state:
+        st.session_state['tender_deadline'] = None
+    if 'tender_process_owner' not in st.session_state:
+        st.session_state['tender_process_owner'] = None
+    if 'lots' not in st.session_state:
+        st.session_state['lots'] = None
 
     # Get current port
     port = st.query_params.get('port', ['8501'])[0]
@@ -88,10 +122,6 @@ def main():
     choice = st.sidebar.radio("Go to", options)
 
     if choice == "Create Tender":
-        # Initialize session state
-        if 'step' not in st.session_state:
-            st.session_state['step'] = 1
-
         def reset_form():
             for key in list(st.session_state.keys()):
                 if key != 'step':
