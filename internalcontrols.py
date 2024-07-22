@@ -72,7 +72,7 @@ def main():
     st.title("Procurement Wizard Form")
 
     # Authenticate Google Sheets
-    json_keyfile_name = r'C:/apptests/docstreamerAPI.json'  # Hardcoded path for the JSON keyfile
+    json_keyfile_name = r'docstreamerAPI.json'  # Hardcoded path for the JSON keyfile
     client = authenticate_gsheets(json_keyfile_name)
     spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1iSlsgQrc0-RQ1gFSmyhmXE6x2TKrHgiKRDSDuoX3mEY'
     sheet_name = 'Procurement Data'
