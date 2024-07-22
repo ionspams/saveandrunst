@@ -1,11 +1,4 @@
 streamlit
-pandas==1.5.3      # Include if your code uses pandas
-numpy==1.24.2      # Include if your code uses numpy
-matplotlib==3.7.1  # Include if your code uses matplotlib
-scikit-learn==1.2.1  # Include if your code uses scikit-learn
-requests==2.28.2    # Include if your code uses requests
-beautifulsoup4==4.11.1  # Include if your code uses BeautifulSoup
-plotly==5.12.0     # Include if your code uses plotly
 gspread
 hashlib
 base64
