@@ -4,11 +4,28 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime
 import hashlib
 import base64
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
 
 # Function to initialize Google Sheets client
-def authenticate_gsheets(json_keyfile_name):
-    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    creds = Credentials.from_service_account_file(json_keyfile_name, scopes=scope)
+def authenticate_gsheets():
+    creds_info = {
+        "type": os.getenv("TYPE"),
+        "project_id": os.getenv("PROJECT_ID"),
+        "private_key_id": os.getenv("PRIVATE_KEY_ID"),
+        "private_key": os.getenv("PRIVATE_KEY").replace("\\n", "\n"),
+        "client_email": os.getenv("CLIENT_EMAIL"),
+        "client_id": os.getenv("CLIENT_ID"),
+        "auth_uri": os.getenv("AUTH_URI"),
+        "token_uri": os.getenv("TOKEN_URI"),
+        "auth_provider_x509_cert_url": os.getenv("AUTH_PROVIDER_X509_CERT_URL"),
+        "client_x509_cert_url": os.getenv("CLIENT_X509_CERT_URL"),
+        "universe_domain": os.getenv("UNIVERSE_DOMAIN")
+    }
+    creds = Credentials.from_service_account_info(creds_info)
     client = gspread.authorize(creds)
     return client
 
@@ -72,8 +89,7 @@ def main():
     st.title("Procurement Wizard Form")
 
     # Authenticate Google Sheets
-    json_keyfile_name = r'docstreamerAPI.json'  # Hardcoded path for the JSON keyfile
-    client = authenticate_gsheets(json_keyfile_name)
+    client = authenticate_gsheets()
     spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1iSlsgQrc0-RQ1gFSmyhmXE6x2TKrHgiKRDSDuoX3mEY'
     sheet_name = 'Procurement Data'
     sheet = open_sheet(client, spreadsheet_url, sheet_name)
