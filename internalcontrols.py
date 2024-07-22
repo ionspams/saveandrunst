@@ -95,9 +95,8 @@ def main():
     sheet_name = 'Procurement Data'
     sheet = open_sheet(client, spreadsheet_url, sheet_name)
 
-    # Get current port
-    port = st.query_params.get('port', ['8501'])[0]
-    base_url = f"http://localhost:{port}"
+    # Get current base URL
+    base_url = "https://intcontr.streamlit.app/"
 
     # Sidebar navigation
     st.sidebar.title("Navigation")
@@ -113,6 +112,7 @@ def main():
             for key in list(st.session_state.keys()):
                 if key != 'step':
                     del st.session_state[key]
+            st.session_state['step'] = 1
 
         # Step 1: Determine Purchase Category
         if st.session_state['step'] == 1:
