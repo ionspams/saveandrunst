@@ -1,9 +1,8 @@
 import streamlit as st
 import requests
 import tempfile
-import importlib.util
-import os
 import subprocess
+import os
 
 def install_dependencies(requirements_url):
     try:
@@ -17,7 +16,7 @@ def install_dependencies(requirements_url):
     except Exception as e:
         st.error(f"Failed to install dependencies: {e}")
 
-def fetch_and_import_script(github_url):
+def fetch_and_run_script(github_url):
     try:
         # Extract the base URL and file path
         base_url = github_url.rsplit('/', 1)[0]
@@ -39,13 +38,15 @@ def fetch_and_import_script(github_url):
             tmp_file.write(response.content)
             tmp_file_path = tmp_file.name
         
-        # Import the script as a module
-        spec = importlib.util.spec_from_file_location("dynamic_module", tmp_file_path)
-        dynamic_module = importlib.util.module_from_spec(spec)
-        spec.loader.exec_module(dynamic_module)
+        # Read the content of the temporary file
+        with open(tmp_file_path, 'r') as file:
+            script_content = file.read()
         
         # Clean up the temporary file
         os.remove(tmp_file_path)
+        
+        # Execute the script content
+        exec(script_content, globals())
     except Exception as e:
         st.error(f"Failed to fetch or run the script: {e}")
 
@@ -58,6 +59,6 @@ st.markdown("""
 github_url = st.text_input("Enter GitHub URL to Streamlit App:")
 if st.button("Run App"):
     if github_url:
-        fetch_and_import_script(github_url)
+        fetch_and_run_script(github_url)
     else:
         st.error("Please enter a valid GitHub URL.")
