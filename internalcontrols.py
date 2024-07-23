@@ -1,48 +1,40 @@
 import streamlit as st
 import gspread
-from google.oauth2.service_account import Credentials
+from oauth2client.service_account import ServiceAccountCredentials
 from datetime import datetime
 import hashlib
 import base64
-import json
-import os
-from dotenv import load_dotenv
-
-# Load environment variables from .env file
-load_dotenv()
 
 # Function to initialize Google Sheets client
-def authenticate_gsheets():
-    creds_info = {
-        "type": os.getenv("TYPE"),
-        "project_id": os.getenv("PROJECT_ID"),
-        "private_key_id": os.getenv("PRIVATE_KEY_ID"),
-        "private_key": os.getenv("PRIVATE_KEY").replace("\\n", "\n"),
-        "client_email": os.getenv("CLIENT_EMAIL"),
-        "client_id": os.getenv("CLIENT_ID"),
-        "auth_uri": os.getenv("AUTH_URI"),
-        "token_uri": os.getenv("TOKEN_URI"),
-        "auth_provider_x509_cert_url": os.getenv("AUTH_PROVIDER_X509_CERT_URL"),
-        "client_x509_cert_url": os.getenv("CLIENT_X509_CERT_URL"),
-        "universe_domain": os.getenv("UNIVERSE_DOMAIN")
-    }
-    scope = ["https://www.googleapis.com/auth/spreadsheets", "https://www.googleapis.com/auth/drive"]
-    creds = Credentials.from_service_account_info(creds_info, scopes=scope)
-    client = gspread.authorize(creds)
-    return client
+def authenticate_gsheets(json_keyfile_name):
+    try:
+        scope = ["https://spreadsheets.google.com/feeds", "https://www.googleapis.com/auth/drive"]
+        creds = ServiceAccountCredentials.from_json_keyfile_name(json_keyfile_name, scope)
+        client = gspread.authorize(creds)
+        return client
+    except Exception as e:
+        st.error(f"Error authenticating Google Sheets: {e}")
+        return None
 
 # Function to open a specific Google Sheet
 def open_sheet(client, spreadsheet_url, sheet_name):
-    spreadsheet = client.open_by_url(spreadsheet_url)
     try:
-        sheet = spreadsheet.worksheet(sheet_name)
-    except gspread.WorksheetNotFound:
-        sheet = spreadsheet.add_worksheet(title=sheet_name, rows="1000", cols="20")
-    return sheet
+        spreadsheet = client.open_by_url(spreadsheet_url)
+        try:
+            sheet = spreadsheet.worksheet(sheet_name)
+        except gspread.WorksheetNotFound:
+            sheet = spreadsheet.add_worksheet(title=sheet_name, rows="1000", cols="20")
+        return sheet
+    except Exception as e:
+        st.error(f"Error opening Google Sheet: {e}")
+        return None
 
 # Function to append a row to the Google Sheet
 def append_row(sheet, row):
-    sheet.append_row(row)
+    try:
+        sheet.append_row(row)
+    except Exception as e:
+        st.error(f"Error appending row to Google Sheet: {e}")
 
 # Function to generate a unique public form URL
 def generate_form_url(base_url, form_id):
@@ -64,34 +56,40 @@ def flatten_data(data):
             flat_data.append(value)
     return flat_data
 
-# Function to retrieve tender details from Google Sheets
-def get_tender_details(sheet, form_id):
-    records = sheet.get_all_records()
-    for record in records:
-        if record["form_id"] == form_id:
-            return record
-    return None
+# Function to set headers if not already set
+def set_headers(sheet):
+    headers = ["form_id", "purchase_category", "num_items", "items", "projected_price", "projected_amount", "num_lots", "tender_description", "tender_deadline", "tender_process_owner", "lots", "public_url"]
+    current_headers = sheet.row_values(1)
+    if current_headers != headers:
+        sheet.insert_row(headers, 1)
 
 # Function to list tenders
 def list_tenders(sheet):
-    records = sheet.get_all_records()
-    tenders = []
-    for record in records:
-        tenders.append({
-            "id": record["form_id"],
-            "category": record["purchase_category"],
-            "num_items": record["num_items"],
-            "public_url": record["public_url"]
-        })
-    return tenders
+    try:
+        records = sheet.get_all_records(expected_headers=["form_id", "purchase_category", "num_items", "public_url"])
+        tenders = []
+        for record in records:
+            tenders.append({
+                "id": record["form_id"],
+                "category": record["purchase_category"],
+                "num_items": record["num_items"],
+                "public_url": record["public_url"]
+            })
+        return tenders
+    except Exception as e:
+        st.error(f"Error listing tenders: {e}")
+        return []
 
 # Function to view offers for a tender
 def view_offers(sheet, form_id):
     offers = []
-    records = sheet.get_all_records()
-    for record in records:
-        if record["form_id"] == form_id:
-            offers.append(record)
+    try:
+        records = sheet.get_all_records()
+        for record in records:
+            if record["form_id"] == form_id:
+                offers.append(record)
+    except Exception as e:
+        st.error(f"Error viewing offers: {e}")
     return offers
 
 # Streamlit multi-step form
@@ -99,51 +97,199 @@ def main():
     st.title("Procurement Wizard Form")
 
     # Authenticate Google Sheets
-    client = authenticate_gsheets()
+    json_keyfile_name = 'C:/apptests/docstreamerAPI.json'  # Path to the JSON keyfile
+    client = authenticate_gsheets(json_keyfile_name)
+    if not client:
+        return
     spreadsheet_url = 'https://docs.google.com/spreadsheets/d/1iSlsgQrc0-RQ1gFSmyhmXE6x2TKrHgiKRDSDuoX3mEY'
     sheet_name = 'Procurement Data'
     sheet = open_sheet(client, spreadsheet_url, sheet_name)
+    if not sheet:
+        return
 
-    # Get current base URL
-    base_url = "https://intcontr.streamlit.app/"
+    # Set headers if not already set
+    set_headers(sheet)
 
-    # Check if URL has form_id query parameter
-    form_id = st.experimental_get_query_params().get('form_id', None)
+    # Function to reset session state
+    def reset_form():
+        st.session_state['step'] = 1
+        st.session_state['purchase_category'] = None
+        st.session_state['num_items'] = None
+        st.session_state['items'] = None
+        st.session_state['projected_price'] = None
+        st.session_state['projected_amount'] = None
+        st.session_state['num_lots'] = None
+        st.session_state['tender_description'] = None
+        st.session_state['tender_deadline'] = None
+        st.session_state['tender_process_owner'] = None
+        st.session_state['lots'] = []
 
-    if form_id:
-        form_id = form_id[0]
-        tender_details = get_tender_details(sheet, form_id)
-        
-        if not tender_details:
-            st.error("Invalid Tender ID")
-            return
-        
+    # Initialize session state if not already initialized
+    if 'step' not in st.session_state:
+        reset_form()
+
+    # Get current port
+    port = st.query_params.get('port', ['8501'])[0]
+    base_url = f"http://localhost:{port}"
+
+    # Sidebar navigation
+    st.sidebar.title("Navigation")
+    options = ["Create Tender", "View Tenders", "Review Offers"]
+    choice = st.sidebar.radio("Go to", options)
+
+    if choice == "Create Tender":
+        # Step 1: Determine Purchase Category
+        if st.session_state['step'] == 1:
+            st.header("Start Procurement Process")
+            purchase_category = st.radio("Determine Purchase Category", ["Category A <= $500", "Category B $500 - $5000", "Category C > $5000"])
+            st.session_state['purchase_category'] = purchase_category
+            if st.button("Next"):
+                st.session_state['step'] = 2
+
+        # Step 2: Category-specific Form
+        elif st.session_state['step'] == 2:
+            st.header("Purchase Details")
+            if st.session_state['purchase_category'] == "Category A <= $500":
+                num_items = st.number_input("Number of items to be purchased", min_value=1)
+                st.session_state['num_items'] = num_items
+                items = []
+                for i in range(int(num_items)):
+                    st.subheader(f"Item {i+1}")
+                    product_name = st.text_input(f"Product name {i+1}")
+                    product_description = st.text_area(f"Product description {i+1}")
+                    product_requirements = st.text_area(f"Product requirements {i+1}")
+                    product_quantity = st.number_input(f"Product quantity {i+1}", min_value=1)
+                    desired_price = st.number_input(f"Desired price {i+1} (not more than the maximum price)", min_value=0.01, step=0.01)
+                    items.append({
+                        "product_name": product_name,
+                        "product_description": product_description,
+                        "product_requirements": product_requirements,
+                        "product_quantity": product_quantity,
+                        "desired_price": desired_price
+                    })
+                st.session_state['items'] = items
+                if st.button("Create Public Form"):
+                    st.session_state['step'] = 3
+
+            elif st.session_state['purchase_category'] == "Category B $500 - $5000":
+                projected_price = st.number_input("Projected price", min_value=500.01, max_value=5000.00, step=0.01)
+                st.session_state['projected_price'] = projected_price
+                num_items = st.number_input("Number of items to be purchased", min_value=1)
+                st.session_state['num_items'] = num_items
+                items = []
+                for i in range(int(num_items)):
+                    st.subheader(f"Item {i+1}")
+                    product_name = st.text_input(f"Product name {i+1}")
+                    product_description = st.text_area(f"Product description {i+1}")
+                    product_requirements = st.text_area(f"Product requirements {i+1}")
+                    product_quantity = st.number_input(f"Product quantity {i+1}", min_value=1)
+                    desired_price = st.number_input(f"Desired price {i+1} (not more than the maximum price)", min_value=0.01, step=0.01)
+                    items.append({
+                        "product_name": product_name,
+                        "product_description": product_description,
+                        "product_requirements": product_requirements,
+                        "product_quantity": product_quantity,
+                        "desired_price": desired_price
+                    })
+                st.session_state['items'] = items
+                if st.button("Create Public Form"):
+                    st.session_state['step'] = 3
+
+            elif st.session_state['purchase_category'] == "Category C > $5000":
+                projected_amount = st.number_input("Projected amount", min_value=5000.01, step=0.01)
+                st.session_state['projected_amount'] = projected_amount
+                num_lots = st.number_input("Number of lots in the tender", min_value=1)
+                st.session_state['num_lots'] = num_lots
+                tender_description = st.text_area("Tender description")
+                tender_deadline = st.date_input("Tender deadline")
+                tender_process_owner = st.text_input("Tender process owner contact details")
+                st.session_state['tender_description'] = tender_description
+                st.session_state['tender_deadline'] = tender_deadline
+                st.session_state['tender_process_owner'] = tender_process_owner
+                lots = []
+                for i in range(int(num_lots)):
+                    st.subheader(f"Lot {i+1}")
+                    lot_name = st.text_input(f"Lot name {i+1}")
+                    num_products = st.number_input(f"Number of products/services in Lot {i+1}", min_value=1)
+                    products = []
+                    for j in range(int(num_products)):
+                        st.subheader(f"Product/Service {j+1} in Lot {i+1}")
+                        product_name = st.text_input(f"Product name {i+1}.{j+1}")
+                        product_description = st.text_area(f"Product description {i+1}.{j+1}")
+                        product_requirements = st.text_area(f"Product requirements {i+1}.{j+1}")
+                        product_quantity = st.number_input(f"Product quantity {i+1}.{j+1}", min_value=1)
+                        desired_price = st.number_input(f"Desired price {i+1}.{j+1}", min_value=0.01, step=0.01)
+                        products.append({
+                            "product_name": product_name,
+                            "product_description": product_description,
+                            "product_requirements": product_requirements,
+                            "product_quantity": product_quantity,
+                            "desired_price": desired_price
+                        })
+                    lots.append({
+                        "lot_name": lot_name,
+                        "products": products
+                    })
+                st.session_state['lots'] = lots
+                if st.button("Create Public Form"):
+                    st.session_state['step'] = 3
+
+        # Step 3: Finalize and Store Data
+        elif st.session_state['step'] == 3:
+            st.header("Finalize Procurement")
+            st.write("Review the details and submit the form.")
+            
+            # Display a summary of the data
+            st.subheader("Summary")
+            st.write(f"Category: {st.session_state['purchase_category']}")
+            
+            if 'num_items' in st.session_state and st.session_state['num_items'] is not None:
+                st.write(f"Number of Items: {st.session_state['num_items']}")
+                for item in st.session_state['items']:
+                    st.write(item)
+            
+            if 'projected_price' in st.session_state and st.session_state['projected_price'] is not None:
+                st.write(f"Projected Price: {st.session_state['projected_price']}")
+            
+            if 'projected_amount' in st.session_state and st.session_state['projected_amount'] is not None:
+                st.write(f"Projected Amount: {st.session_state['projected_amount']}")
+                st.write(f"Tender Description: {st.session_state['tender_description']}")
+                st.write(f"Tender Deadline: {st.session_state['tender_deadline']}")
+                st.write(f"Tender Process Owner: {st.session_state['tender_process_owner']}")
+                for lot in st.session_state['lots']:
+                    st.write(f"Lot Name: {lot['lot_name']}")
+                    for product in lot['products']:
+                        st.write(product)
+            
+            if st.button("Submit"):
+                data = {
+                    'form_id': hashlib.sha256(str(st.session_state).encode()).hexdigest(),
+                    'purchase_category': st.session_state.get('purchase_category'),
+                    'num_items': st.session_state.get('num_items'),
+                    'items': st.session_state.get('items'),
+                    'projected_price': st.session_state.get('projected_price'),
+                    'projected_amount': st.session_state.get('projected_amount'),
+                    'num_lots': st.session_state.get('num_lots'),
+                    'tender_description': st.session_state.get('tender_description'),
+                    'tender_deadline': st.session_state.get('tender_deadline').strftime('%Y-%m-%d') if st.session_state.get('tender_deadline') else None,
+                    'tender_process_owner': st.session_state.get('tender_process_owner'),
+                    'lots': st.session_state.get('lots')
+                }
+                flat_data = flatten_data(data)
+                append_row(sheet, flat_data)
+                
+                form_id = hashlib.sha256(str(data).encode()).hexdigest()
+                form_url = generate_form_url(base_url, form_id)
+                st.success("Procurement data submitted successfully!")
+                st.write(f"Public form URL: {form_url}")
+                if st.button("Start New Procurement"):
+                    reset_form()
+
+    # Handling public form submission
+    elif 'form_id' in st.query_params:
+        form_id = st.query_params.get('form_id')[0]
         st.header(f"Tender ID: {form_id}")
         st.write("Submit your offer below:")
-        
-        items = json.loads(tender_details['items']) if 'items' in tender_details else []
-        lots = json.loads(tender_details['lots']) if 'lots' in tender_details else []
-        
-        if items:
-            st.subheader("Items")
-            for i, item in enumerate(items):
-                st.write(f"Item {i+1}")
-                st.write(f"Product Name: {item['product_name']}")
-                st.write(f"Product Description: {item['product_description']}")
-                st.write(f"Product Requirements: {item['product_requirements']}")
-                st.write(f"Product Quantity: {item['product_quantity']}")
-                st.write(f"Desired Price: {item['desired_price']}")
-
-        if lots:
-            st.subheader("Lots")
-            for i, lot in enumerate(lots):
-                st.write(f"Lot {i+1}: {lot['lot_name']}")
-                for j, product in enumerate(lot['products']):
-                    st.write(f"  Product {j+1}: {product['product_name']}")
-                    st.write(f"  Description: {product['product_description']}")
-                    st.write(f"  Requirements: {product['product_requirements']}")
-                    st.write(f"  Quantity: {product['product_quantity']}")
-                    st.write(f"  Desired Price: {product['desired_price']}")
         
         offer_name = st.text_input("Offer Name")
         offer_description = st.text_area("Offer Description")
@@ -160,192 +306,28 @@ def main():
             append_row(sheet, flat_offer_data)
             st.success("Offer submitted successfully!")
 
-    else:
-        # Sidebar navigation
-        st.sidebar.title("Navigation")
-        options = ["Create Tender", "View Tenders", "Review Offers"]
-        choice = st.sidebar.radio("Go to", options)
+    elif choice == "View Tenders":
+        # View tenders
+        st.header("View Tenders")
+        tenders = list_tenders(sheet)
+        for tender in tenders:
+            st.subheader(f"Tender ID: {tender['id']}")
+            st.write(f"Category: {tender['category']}")
+            st.write(f"Number of Items: {tender['num_items']}")
+            st.write(f"Public URL: {tender['public_url']}")
 
-        if choice == "Create Tender":
-            # Initialize session state
-            if 'step' not in st.session_state:
-                st.session_state['step'] = 1
-
-            def reset_form():
-                for key in list(st.session_state.keys()):
-                    if key != 'step':
-                        del st.session_state[key]
-                st.session_state['step'] = 1
-
-            # Step 1: Determine Purchase Category
-            if st.session_state['step'] == 1:
-                st.header("Start Procurement Process")
-                purchase_category = st.radio("Determine Purchase Category", ["Category A <= $500", "Category B $500 - $5000", "Category C > $5000"])
-                st.session_state['purchase_category'] = purchase_category
-                if st.button("Next"):
-                    st.session_state['step'] = 2
-
-            # Step 2: Category-specific Form
-            elif st.session_state['step'] == 2:
-                st.header("Purchase Details")
-                if st.session_state['purchase_category'] == "Category A <= $500":
-                    num_items = st.number_input("Number of items to be purchased", min_value=1)
-                    st.session_state['num_items'] = num_items
-                    items = []
-                    for i in range(int(num_items)):
-                        st.subheader(f"Item {i+1}")
-                        product_name = st.text_input(f"Product name {i+1}")
-                        product_description = st.text_area(f"Product description {i+1}")
-                        product_requirements = st.text_area(f"Product requirements {i+1}")
-                        product_quantity = st.number_input(f"Product quantity {i+1}", min_value=1)
-                        desired_price = st.number_input(f"Desired price {i+1} (not more than the maximum price)", min_value=0.01, step=0.01)
-                        items.append({
-                            "product_name": product_name,
-                            "product_description": product_description,
-                            "product_requirements": product_requirements,
-                            "product_quantity": product_quantity,
-                            "desired_price": desired_price
-                        })
-                    st.session_state['items'] = items
-                    if st.button("Create Public Form"):
-                        st.session_state['step'] = 3
-
-                elif st.session_state['purchase_category'] == "Category B $500 - $5000":
-                    projected_price = st.number_input("Projected price", min_value=500.01, max_value=5000.00, step=0.01)
-                    st.session_state['projected_price'] = projected_price
-                    num_items = st.number_input("Number of items to be purchased", min_value=1)
-                    st.session_state['num_items'] = num_items
-                    items = []
-                    for i in range(int(num_items)):
-                        st.subheader(f"Item {i+1}")
-                        product_name = st.text_input(f"Product name {i+1}")
-                        product_description = st.text_area(f"Product description {i+1}")
-                        product_requirements = st.text_area(f"Product requirements {i+1}")
-                        product_quantity = st.number_input(f"Product quantity {i+1}", min_value=1)
-                        desired_price = st.number_input(f"Desired price {i+1} (not more than the maximum price)", min_value=0.01, step=0.01)
-                        items.append({
-                            "product_name": product_name,
-                            "product_description": product_description,
-                            "product_requirements": product_requirements,
-                            "product_quantity": product_quantity,
-                            "desired_price": desired_price
-                        })
-                    st.session_state['items'] = items
-                    if st.button("Create Public Form"):
-                        st.session_state['step'] = 3
-
-                elif st.session_state['purchase_category'] == "Category C > $5000":
-                    projected_amount = st.number_input("Projected amount", min_value=5000.01, step=0.01)
-                    st.session_state['projected_amount'] = projected_amount
-                    num_lots = st.number_input("Number of lots in the tender", min_value=1)
-                    st.session_state['num_lots'] = num_lots
-                    tender_description = st.text_area("Tender description")
-                    tender_deadline = st.date_input("Tender deadline")
-                    tender_process_owner = st.text_input("Tender process owner contact details")
-                    st.session_state['tender_description'] = tender_description
-                    st.session_state['tender_deadline'] = tender_deadline
-                    st.session_state['tender_process_owner'] = tender_process_owner
-                    lots = []
-                    for i in range(int(num_lots)):
-                        st.subheader(f"Lot {i+1}")
-                        lot_name = st.text_input(f"Lot name {i+1}")
-                        num_products = st.number_input(f"Number of products/services in Lot {i+1}", min_value=1)
-                        products = []
-                        for j in range(int(num_products)):
-                            st.subheader(f"Product/Service {j+1} in Lot {i+1}")
-                            product_name = st.text_input(f"Product name {i+1}.{j+1}")
-                            product_description = st.text_area(f"Product description {i+1}.{j+1}")
-                            product_requirements = st.text_area(f"Product requirements {i+1}.{j+1}")
-                            product_quantity = st.number_input(f"Product quantity {i+1}.{j+1}", min_value=1)
-                            desired_price = st.number_input(f"Desired price {i+1}.{j+1}", min_value=0.01, step=0.01)
-                            products.append({
-                                "product_name": product_name,
-                                "product_description": product_description,
-                                "product_requirements": product_requirements,
-                                "product_quantity": product_quantity,
-                                "desired_price": desired_price
-                            })
-                        lots.append({
-                            "lot_name": lot_name,
-                            "products": products
-                        })
-                    st.session_state['lots'] = lots
-                    if st.button("Create Public Form"):
-                        st.session_state['step'] = 3
-
-            # Step 3: Finalize and Store Data
-            elif st.session_state['step'] == 3:
-                st.header("Finalize Procurement")
-                st.write("Review the details and submit the form.")
-                
-                # Display a summary of the data
-                st.subheader("Summary")
-                st.write(f"Category: {st.session_state['purchase_category']}")
-                
-                if 'num_items' in st.session_state:
-                    st.write(f"Number of Items: {st.session_state['num_items']}")
-                    for item in st.session_state['items']:
-                        st.write(item)
-                
-                if 'projected_price' in st.session_state:
-                    st.write(f"Projected Price: {st.session_state['projected_price']}")
-                
-                if 'projected_amount' in st.session_state:
-                    st.write(f"Projected Amount: {st.session_state['projected_amount']}")
-                    st.write(f"Tender Description: {st.session_state['tender_description']}")
-                    st.write(f"Tender Deadline: {st.session_state['tender_deadline']}")
-                    st.write(f"Tender Process Owner: {st.session_state['tender_process_owner']}")
-                    for lot in st.session_state['lots']:
-                        st.write(f"Lot Name: {lot['lot_name']}")
-                        for product in lot['products']:
-                            st.write(product)
-                
-                if st.button("Submit"):
-                    data = {
-                        'form_id': hashlib.sha256(str(st.session_state).encode()).hexdigest(),
-                        'purchase_category': st.session_state.get('purchase_category'),
-                        'num_items': st.session_state.get('num_items'),
-                        'items': json.dumps(st.session_state.get('items')),  # Store items as JSON string
-                        'projected_price': st.session_state.get('projected_price'),
-                        'projected_amount': st.session_state.get('projected_amount'),
-                        'num_lots': st.session_state.get('num_lots'),
-                        'tender_description': st.session_state.get('tender_description'),
-                        'tender_deadline': st.session_state.get('tender_deadline').strftime('%Y-%m-%d') if st.session_state.get('tender_deadline') else None,
-                        'tender_process_owner': st.session_state.get('tender_process_owner'),
-                        'lots': json.dumps(st.session_state.get('lots')),  # Store lots as JSON string
-                        'public_url': generate_form_url(base_url, hashlib.sha256(str(st.session_state).encode()).hexdigest())
-                    }
-                    flat_data = flatten_data(data)
-                    append_row(sheet, flat_data)
-                    
-                    form_id = hashlib.sha256(str(data).encode()).hexdigest()
-                    form_url = generate_form_url(base_url, form_id)
-                    st.success("Procurement data submitted successfully!")
-                    st.write(f"Public form URL: {form_url}")
-                    reset_form()
-
-        elif choice == "View Tenders":
-            # View tenders
-            st.header("View Tenders")
-            tenders = list_tenders(sheet)
-            for tender in tenders:
-                st.subheader(f"Tender ID: {tender['id']}")
-                st.write(f"Category: {tender['category']}")
-                st.write(f"Number of Items: {tender['num_items']}")
-                st.write(f"Public URL: {tender['public_url']}")
-
-        elif choice == "Review Offers":
-            # Review offers
-            st.header("Review Offers")
-            form_id = st.text_input("Enter the Tender ID to review offers:")
-            if st.button("Review Offers"):
-                offers = view_offers(sheet, form_id)
-                if offers:
-                    st.write(f"Offers for Tender ID: {form_id}")
-                    for offer in offers:
-                        st.write(offer)
-                else:
-                    st.write(f"No offers found for Tender ID: {form_id}")
+    elif choice == "Review Offers":
+        # Review offers
+        st.header("Review Offers")
+        form_id = st.text_input("Enter the Tender ID to review offers:")
+        if st.button("Review Offers"):
+            offers = view_offers(sheet, form_id)
+            if offers:
+                st.write(f"Offers for Tender ID: {form_id}")
+                for offer in offers:
+                    st.write(offer)
+            else:
+                st.write(f"No offers found for Tender ID: {form_id}")
 
 if __name__ == "__main__":
     main()
