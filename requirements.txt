@@ -3,4 +3,4 @@ gspread
 oauth2client
 python-dotenv
 requests
-github
+PyGithub
