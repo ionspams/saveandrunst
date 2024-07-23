@@ -4,6 +4,7 @@ from google.oauth2.service_account import Credentials
 from datetime import datetime
 import hashlib
 import base64
+import json
 import os
 from dotenv import load_dotenv
 
@@ -250,14 +251,14 @@ def main():
                     'form_id': hashlib.sha256(str(st.session_state).encode()).hexdigest(),
                     'purchase_category': st.session_state.get('purchase_category'),
                     'num_items': st.session_state.get('num_items'),
-                    'items': st.session_state.get('items'),
+                    'items': json.dumps(st.session_state.get('items')),  # Store items as JSON string
                     'projected_price': st.session_state.get('projected_price'),
                     'projected_amount': st.session_state.get('projected_amount'),
                     'num_lots': st.session_state.get('num_lots'),
                     'tender_description': st.session_state.get('tender_description'),
                     'tender_deadline': st.session_state.get('tender_deadline').strftime('%Y-%m-%d') if st.session_state.get('tender_deadline') else None,
                     'tender_process_owner': st.session_state.get('tender_process_owner'),
-                    'lots': st.session_state.get('lots'),
+                    'lots': json.dumps(st.session_state.get('lots')),  # Store lots as JSON string
                     'public_url': generate_form_url(base_url, hashlib.sha256(str(st.session_state).encode()).hexdigest())
                 }
                 flat_data = flatten_data(data)
@@ -280,6 +281,30 @@ def main():
         
         st.header(f"Tender ID: {form_id}")
         st.write("Submit your offer below:")
+        
+        items = json.loads(tender_details['items']) if 'items' in tender_details else []
+        lots = json.loads(tender_details['lots']) if 'lots' in tender_details else []
+        
+        if items:
+            st.subheader("Items")
+            for i, item in enumerate(items):
+                st.write(f"Item {i+1}")
+                st.write(f"Product Name: {item['product_name']}")
+                st.write(f"Product Description: {item['product_description']}")
+                st.write(f"Product Requirements: {item['product_requirements']}")
+                st.write(f"Product Quantity: {item['product_quantity']}")
+                st.write(f"Desired Price: {item['desired_price']}")
+
+        if lots:
+            st.subheader("Lots")
+            for i, lot in enumerate(lots):
+                st.write(f"Lot {i+1}: {lot['lot_name']}")
+                for j, product in enumerate(lot['products']):
+                    st.write(f"  Product {j+1}: {product['product_name']}")
+                    st.write(f"  Description: {product['product_description']}")
+                    st.write(f"  Requirements: {product['product_requirements']}")
+                    st.write(f"  Quantity: {product['product_quantity']}")
+                    st.write(f"  Desired Price: {product['desired_price']}")
         
         offer_name = st.text_input("Offer Name")
         offer_description = st.text_area("Offer Description")
