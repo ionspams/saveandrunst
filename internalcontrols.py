@@ -63,6 +63,14 @@ def flatten_data(data):
             flat_data.append(value)
     return flat_data
 
+# Function to retrieve tender details from Google Sheets
+def get_tender_details(sheet, form_id):
+    records = sheet.get_all_records()
+    for record in records:
+        if record["form_id"] == form_id:
+            return record
+    return None
+
 # Function to list tenders
 def list_tenders(sheet):
     records = sheet.get_all_records()
@@ -249,7 +257,8 @@ def main():
                     'tender_description': st.session_state.get('tender_description'),
                     'tender_deadline': st.session_state.get('tender_deadline').strftime('%Y-%m-%d') if st.session_state.get('tender_deadline') else None,
                     'tender_process_owner': st.session_state.get('tender_process_owner'),
-                    'lots': st.session_state.get('lots')
+                    'lots': st.session_state.get('lots'),
+                    'public_url': generate_form_url(base_url, hashlib.sha256(str(st.session_state).encode()).hexdigest())
                 }
                 flat_data = flatten_data(data)
                 append_row(sheet, flat_data)
@@ -263,6 +272,12 @@ def main():
     # Handling public form submission
     elif 'form_id' in st.query_params:
         form_id = st.query_params.get('form_id')[0]
+        tender_details = get_tender_details(sheet, form_id)
+        
+        if not tender_details:
+            st.error("Invalid Tender ID")
+            return
+        
         st.header(f"Tender ID: {form_id}")
         st.write("Submit your offer below:")
         
