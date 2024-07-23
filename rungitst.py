@@ -20,12 +20,12 @@ def fetch_repo_structure(repo_url):
         
         # Fetch the directory structure
         contents = repo.get_contents("")
-        return contents, repo_name
+        return contents, repo_name, repo
     except Exception as e:
         st.error(f"Failed to fetch repository structure: {e}")
-        return None, None
+        return None, None, None
 
-def display_folder_contents(contents, repo_name):
+def display_folder_contents(contents, repo):
     py_files = []
     folders = []
     
@@ -105,9 +105,9 @@ st.markdown("""
 repo_url = st.text_input("Enter GitHub URL to repository:")
 
 if repo_url:
-    contents, repo_name = fetch_repo_structure(repo_url)
+    contents, repo_name, repo = fetch_repo_structure(repo_url)
     if contents:
-        selected_file = display_folder_contents(contents, repo_name)
+        selected_file = display_folder_contents(contents, repo)
         if selected_file and st.button("Run App"):
             install_dependencies(repo_name, selected_file)
             fetch_and_run_script(repo_name, selected_file)
