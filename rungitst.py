@@ -11,15 +11,19 @@ def install_dependencies(requirements_url):
         
         requirements = response.text.splitlines()
         
-        # Remove built-in modules from the requirements
-        filtered_requirements = [req for req in requirements if req != 'subprocess']
+        # Filter out built-in modules and handle special cases
+        filtered_requirements = [req for req in requirements if req.strip() and 'subprocess' not in req.lower()]
         
         if filtered_requirements:
             with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as tmp_file:
                 tmp_file.write("\n".join(filtered_requirements).encode())
                 tmp_file_path = tmp_file.name
             
-            subprocess.run(["pip", "install", "-r", tmp_file_path])
+            try:
+                subprocess.run(["pip", "install", "-r", tmp_file_path], check=True)
+            except subprocess.CalledProcessError as e:
+                st.error(f"Failed to install dependencies from requirements.txt: {e}")
+            
             os.remove(tmp_file_path)
     except Exception as e:
         st.error(f"Failed to install dependencies: {e}")
