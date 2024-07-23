@@ -3,6 +3,7 @@ import requests
 import tempfile
 import subprocess
 import os
+import sys
 from github import Github
 
 # Initialize GitHub API (you may need a token for private repos)
@@ -61,7 +62,7 @@ def install_dependencies(repo_name, file_path):
                     tmp_file_path = tmp_file.name
                 
                 try:
-                    subprocess.run(["pip", "install", "-r", tmp_file_path], check=True)
+                    subprocess.run([sys.executable, "-m", "pip", "install", "-r", tmp_file_path], check=True)
                 except subprocess.CalledProcessError as e:
                     st.error(f"Failed to install dependencies from requirements.txt: {e}")
                     st.error("Ensure the system-level dependencies are installed.")
