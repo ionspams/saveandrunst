@@ -3,7 +3,6 @@ import requests
 import tempfile
 import subprocess
 import os
-import base64
 from github import Github
 
 # Initialize GitHub API (you may need a token for private repos)
@@ -61,7 +60,12 @@ def install_dependencies(repo_name, file_path):
                     tmp_file.write("\n".join(filtered_requirements).encode())
                     tmp_file_path = tmp_file.name
                 
-                subprocess.run(["pip", "install", "-r", tmp_file_path], check=True)
+                try:
+                    subprocess.run(["pip", "install", "-r", tmp_file_path], check=True)
+                except subprocess.CalledProcessError as e:
+                    st.error(f"Failed to install dependencies from requirements.txt: {e}")
+                    st.error("Ensure the system-level dependencies are installed.")
+                
                 os.remove(tmp_file_path)
     except Exception as e:
         st.error(f"Failed to install dependencies: {e}")
