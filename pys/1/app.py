@@ -41,6 +41,7 @@ def list_files():
         return [file['name'] for file in files if file['type'] == 'file']
     else:
         st.error(f"Failed to fetch files from GitHub: {response.status_code}")
+        st.write(response.json())
         return []
 
 def download_file(file_name):
@@ -53,14 +54,69 @@ def download_file(file_name):
         st.success(f"Downloaded {file_name}")
     else:
         st.error(f"Failed to download file: {response.status_code}")
+        st.write(response.text)
+
+def display_gantt_file(file_name):
+    url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/{BRANCH_NAME}/{FOLDER_PATH}/{file_name}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        file_content = response.content.decode('utf-8')
+        if file_name.endswith('.xlsx'):
+            df = pd.read_excel(file_content)
+        elif file_name.endswith('.csv'):
+            df = pd.read_csv(file_content)
+        elif file_name.endswith('.gantt'):
+            df = process_gantt_file_content(file_content)
+        else:
+            st.error("Unsupported file type.")
+            return
+        st.write(df)
+    else:
+        st.error(f"Failed to load file: {response.status_code}")
 
 def view_and_download_files():
     st.sidebar.subheader("View and Download Gantt Files")
     files = list_files()
     if files:
-        selected_file = st.sidebar.selectbox("Select a file to download", files)
+        selected_file = st.sidebar.selectbox("Select a file to view/download", files)
+        if st.sidebar.button("View"):
+            display_gantt_file(selected_file)
         if st.sidebar.button("Download"):
             download_file(selected_file)
+
+def process_gantt_file_content(file_content):
+    try:
+        gantt_data_json = json.loads(file_content)
+    except json.JSONDecodeError:
+        st.error("Error parsing the Gantt file. Please ensure it is in valid JSON format.")
+        return pd.DataFrame()
+
+    if 'data' not in gantt_data_json:
+        st.error("The Gantt file does not contain the expected structure. Please check the file.")
+        st.json(gantt_data_json)  # Display the JSON structure for debugging
+        return pd.DataFrame()
+    
+    gantt_data = {
+        'Task': [],
+        'Start': [],
+        'Finish': [],
+        'Resource': [],
+        'Progress': [],
+        'Predecessor': [],
+        'Info': []
+    }
+    
+    for item in gantt_data_json['data']:
+        gantt_data['Task'].append(item['TaskName'])
+        gantt_data['Start'].append(item['StartDate'])
+        gantt_data['Finish'].append(item['EndDate'])
+        gantt_data['Resource'].append(", ".join([res['resourceName'] for res in item['resources']]))
+        gantt_data['Progress'].append(item['Progress'])
+        gantt_data['Predecessor'].append(item['Predecessor'])
+        gantt_data['Info'].append(item['info'])
+    
+    gantt_df = pd.DataFrame(gantt_data)
+    return gantt_df
 
 def upload_documents():
     st.sidebar.subheader("Upload New Documents")
@@ -98,7 +154,6 @@ def use_existing_gantt_file():
             st.plotly_chart(gantt_chart)
             show_dashboard(gantt_data)
             add_edit_tasks(gantt_data)
-
 
 def process_budget(file):
     df = pd.read_excel(file, sheet_name='Activity Based Budget')
