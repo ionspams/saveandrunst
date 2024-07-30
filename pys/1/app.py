@@ -4,6 +4,8 @@ import plotly.express as px
 import json
 import openpyxl
 from datetime import datetime
+import requests
+import os
 
 # Set the page configuration as the first Streamlit command
 st.set_page_config(layout="wide")
@@ -15,11 +17,12 @@ try:
 except ImportError as e:
     st.error(f"Error: {e}. Please install the required packages using `pip install PyPDF2 openpyxl pandas plotly`.")
 
+# Call the function in the main function or appropriate section
 def main():
     st.title("Project Management Interactive Dashboard")
     st.sidebar.title("Navigation")
     
-    option = st.sidebar.selectbox("Choose an option", ["Upload Documents", "Use Existing Gantt File", "Manage Tasks", "Manage Resources"])
+    option = st.sidebar.selectbox("Choose an option", ["Upload Documents", "Use Existing Gantt File", "Manage Tasks", "Manage Resources", "View and Download Gantt Files"])
 
     if option == "Upload Documents":
         upload_documents()
@@ -29,6 +32,8 @@ def main():
         manage_tasks()
     elif option == "Manage Resources":
         manage_resources()
+    elif option == "View and Download Gantt Files":
+        view_and_download_files()
 
 def upload_documents():
     st.sidebar.subheader("Upload New Documents")
@@ -66,6 +71,41 @@ def use_existing_gantt_file():
             st.plotly_chart(gantt_chart)
             show_dashboard(gantt_data)
             add_edit_tasks(gantt_data)
+
+# GitHub repository and branch details
+REPO_OWNER = 'ionspams'
+REPO_NAME = 'saveandrunst'
+BRANCH_NAME = 'main'
+FOLDER_PATH = 'pys/1/existing_gantt_files'
+
+def list_files():
+    url = f"https://api.github.com/repos/{REPO_OWNER}/{REPO_NAME}/contents/{FOLDER_PATH}?ref={BRANCH_NAME}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        files = response.json()
+        return [file['name'] for file in files if file['type'] == 'file']
+    else:
+        st.error(f"Failed to fetch files from GitHub: {response.status_code}")
+        return []
+
+def download_file(file_name):
+    url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/{BRANCH_NAME}/{FOLDER_PATH}/{file_name}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        file_path = os.path.join(FOLDER_PATH, file_name)
+        with open(file_path, 'wb') as f:
+            f.write(response.content)
+        st.success(f"Downloaded {file_name}")
+    else:
+        st.error(f"Failed to download file: {response.status_code}")
+
+def view_and_download_files():
+    st.sidebar.subheader("View and Download Gantt Files")
+    files = list_files()
+    if files:
+        selected_file = st.sidebar.selectbox("Select a file to download", files)
+        if st.sidebar.button("Download"):
+            download_file(selected_file)
 
 def process_budget(file):
     df = pd.read_excel(file, sheet_name='Activity Based Budget')
