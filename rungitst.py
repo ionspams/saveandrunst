@@ -10,19 +10,22 @@ from github import Github
 gh = Github()
 
 def fetch_branches(repo):
-    branches = [branch.name for branch in repo.get_branches()]
-    return branches
+    try:
+        branches = [branch.name for branch in repo.get_branches()]
+        return branches
+    except Exception as e:
+        st.error(f"Failed to fetch branches: {e}")
+        return []
 
 def fetch_repo_structure(repo, branch):
     try:
-        # Switch to the selected branch
         contents = repo.get_contents("", ref=branch)
         return contents
     except Exception as e:
         st.error(f"Failed to fetch repository structure: {e}")
-        return None
+        return []
 
-def display_folder_contents(contents):
+def display_folder_contents(contents, repo, branch):
     py_files = []
     folders = []
     
@@ -122,7 +125,7 @@ if repo_url:
         if selected_branch:
             contents = fetch_repo_structure(repo, selected_branch)
             if contents:
-                selected_file = display_folder_contents(contents)
+                selected_file = display_folder_contents(contents, repo, selected_branch)
                 if selected_file and st.button("Run App"):
                     install_dependencies(repo_name, selected_file, selected_branch)
                     fetch_and_run_script(repo_name, selected_file, selected_branch)
