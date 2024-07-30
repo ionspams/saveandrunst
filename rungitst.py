@@ -12,6 +12,7 @@ gh = Github()
 def fetch_branches(repo):
     try:
         branches = [branch.name for branch in repo.get_branches()]
+        st.write(f"Fetched branches: {branches}")
         return branches
     except Exception as e:
         st.error(f"Failed to fetch branches: {e}")
@@ -20,6 +21,7 @@ def fetch_branches(repo):
 def fetch_repo_structure(repo, branch):
     try:
         contents = repo.get_contents("", ref=branch)
+        st.write(f"Fetched repository contents for branch '{branch}': {contents}")
         return contents
     except Exception as e:
         st.error(f"Failed to fetch repository structure: {e}")
@@ -38,6 +40,7 @@ def display_folder_contents(contents, repo, branch):
     selected_folder = st.selectbox("Select a folder:", [""] + folders)
     if selected_folder:
         sub_contents = repo.get_contents(selected_folder, ref=branch)
+        st.write(f"Fetched sub-folder contents for folder '{selected_folder}': {sub_contents}")
         for sub_content in sub_contents:
             if sub_content.name.endswith(".py"):
                 py_files.append(sub_content.path)
@@ -120,7 +123,8 @@ if repo_url:
         
         # Fetch branches
         branches = fetch_branches(repo)
-        selected_branch = st.selectbox("Select a branch:", branches)
+        if branches:
+            selected_branch = st.selectbox("Select a branch:", branches)
         
         if selected_branch:
             contents = fetch_repo_structure(repo, selected_branch)
