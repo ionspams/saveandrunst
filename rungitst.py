@@ -12,7 +12,6 @@ gh = Github()
 def fetch_branches(repo):
     try:
         branches = [branch.name for branch in repo.get_branches()]
-        st.write(f"Fetched branches: {branches}")
         return branches
     except Exception as e:
         st.error(f"Failed to fetch branches: {e}")
@@ -21,7 +20,6 @@ def fetch_branches(repo):
 def fetch_repo_structure(repo, branch):
     try:
         contents = repo.get_contents("", ref=branch)
-        st.write(f"Fetched repository contents for branch '{branch}': {contents}")
         return contents
     except Exception as e:
         st.error(f"Failed to fetch repository structure: {e}")
@@ -40,42 +38,12 @@ def display_folder_contents(contents, repo, branch):
     selected_folder = st.selectbox("Select a folder:", [""] + folders)
     if selected_folder:
         sub_contents = repo.get_contents(selected_folder, ref=branch)
-        st.write(f"Fetched sub-folder contents for folder '{selected_folder}': {sub_contents}")
         for sub_content in sub_contents:
             if sub_content.name.endswith(".py"):
                 py_files.append(sub_content.path)
     
     selected_file = st.selectbox("Select a .py file to run:", [""] + py_files)
     return selected_file
-
-def install_dependencies(repo_name, file_path, branch):
-    try:
-        # Fetch the raw content of the requirements.txt file
-        base_url = f"https://raw.githubusercontent.com/{repo_name}/{branch}/{os.path.dirname(file_path)}"
-        requirements_url = f"{base_url}/requirements.txt"
-        response = requests.get(requirements_url)
-        
-        if response.status_code == 200:
-            requirements = response.text.splitlines()
-            filtered_requirements = [req for req in requirements if req.strip() and 'subprocess' not in req.lower()]
-            
-            if filtered_requirements:
-                with tempfile.NamedTemporaryFile(suffix=".txt", delete=False) as tmp_file:
-                    tmp_file.write("\n".join(filtered_requirements).encode())
-                    tmp_file_path = tmp_file.name
-                
-                try:
-                    result = subprocess.run([sys.executable, "-m", "pip", "install", "-r", tmp_file_path], text=True, capture_output=True)
-                    if result.returncode != 0:
-                        st.error(f"Failed to install dependencies from requirements.txt:\n{result.stderr}")
-                        st.error("Ensure the system-level dependencies are installed.")
-                        st.text(f"Full pip install output:\n{result.stdout}\n{result.stderr}")
-                except subprocess.CalledProcessError as e:
-                    st.error(f"Failed to install dependencies from requirements.txt: {e}")
-                
-                os.remove(tmp_file_path)
-    except Exception as e:
-        st.error(f"Failed to install dependencies: {e}")
 
 def fetch_and_run_script(repo_name, file_path, branch):
     try:
@@ -89,15 +57,9 @@ def fetch_and_run_script(repo_name, file_path, branch):
             tmp_file.write(response.content)
             tmp_file_path = tmp_file.name
         
-        # Read the content of the temporary file
-        with open(tmp_file_path, 'r') as file:
-            script_content = file.read()
-        
-        # Clean up the temporary file
-        os.remove(tmp_file_path)
-        
         # Execute the script content
-        exec(script_content, globals())
+        exec(open(tmp_file_path).read(), globals())
+        os.remove(tmp_file_path)
     except FileNotFoundError as fnf_error:
         st.error(f"Failed to fetch or run the script: {fnf_error}")
     except Exception as e:
@@ -131,7 +93,6 @@ if repo_url:
             if contents:
                 selected_file = display_folder_contents(contents, repo, selected_branch)
                 if selected_file and st.button("Run App"):
-                    install_dependencies(repo_name, selected_file, selected_branch)
                     fetch_and_run_script(repo_name, selected_file, selected_branch)
     except Exception as e:
         st.error(f"Failed to process the repository: {e}")
