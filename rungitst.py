@@ -17,6 +17,7 @@ def fetch_branches(repo):
         return branches
     except Exception as e:
         st.error(f"Failed to fetch branches: {e}")
+        st.write(f"Error details: {str(e)}")
         return []
 
 def fetch_repo_structure(repo, branch):
@@ -26,6 +27,7 @@ def fetch_repo_structure(repo, branch):
         return contents
     except Exception as e:
         st.error(f"Failed to fetch repository structure: {e}")
+        st.write(f"Error details: {str(e)}")
         return []
 
 def display_folder_contents(contents, repo, branch):
@@ -40,11 +42,15 @@ def display_folder_contents(contents, repo, branch):
     
     selected_folder = st.selectbox("Select a folder:", [""] + folders)
     if selected_folder:
-        sub_contents = repo.get_contents(selected_folder, ref=branch)
-        st.write(f"Fetched sub-folder contents for folder '{selected_folder}': {sub_contents}")
-        for sub_content in sub_contents:
-            if sub_content.name.endswith(".py"):
-                py_files.append(sub_content.path)
+        try:
+            sub_contents = repo.get_contents(selected_folder, ref=branch)
+            st.write(f"Fetched sub-folder contents for folder '{selected_folder}': {sub_contents}")
+            for sub_content in sub_contents:
+                if sub_content.name.endswith(".py"):
+                    py_files.append(sub_content.path)
+        except Exception as e:
+            st.error(f"Failed to fetch folder contents: {e}")
+            st.write(f"Error details: {str(e)}")
     
     selected_file = st.selectbox("Select a .py file to run:", [""] + py_files)
     return selected_file
@@ -72,8 +78,10 @@ def fetch_and_run_script(repo_name, file_path, branch):
         exec(script_content, globals())
     except FileNotFoundError as fnf_error:
         st.error(f"Failed to fetch or run the script: {fnf_error}")
+        st.write(f"Error details: {str(fnf_error)}")
     except Exception as e:
         st.error(f"Failed to fetch or run the script: {e}")
+        st.write(f"Error details: {str(e)}")
 
 st.title("Dynamic Streamlit App Runner")
 st.markdown("""
@@ -86,13 +94,16 @@ st.markdown("""
 repo_url = st.text_input("Enter GitHub URL to repository:")
 
 if repo_url:
+    st.write(f"Processing repository URL: {repo_url}")
     try:
         # Extract user and repo name from the URL
         user_repo = repo_url.replace('https://github.com/', '').split('/')[0:2]
         repo_name = '/'.join(user_repo)
+        st.write(f"Extracted repository name: {repo_name}")
         
         # Get the repository
         repo = gh.get_repo(repo_name)
+        st.write(f"Successfully accessed repository: {repo_name}")
         
         # Fetch branches
         branches = fetch_branches(repo)
@@ -107,3 +118,4 @@ if repo_url:
                     fetch_and_run_script(repo_name, selected_file, selected_branch)
     except Exception as e:
         st.error(f"Failed to process the repository: {e}")
+        st.write(f"Error details: {str(e)}")
