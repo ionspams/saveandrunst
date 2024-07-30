@@ -62,10 +62,12 @@ def install_dependencies(repo_name, file_path):
                     tmp_file_path = tmp_file.name
                 
                 try:
-                    subprocess.run([sys.executable, "-m", "pip", "install", "-r", tmp_file_path], check=True)
+                    result = subprocess.run([sys.executable, "-m", "pip", "install", "-r", tmp_file_path], text=True, capture_output=True)
+                    if result.returncode != 0:
+                        st.error(f"Failed to install dependencies from requirements.txt:\n{result.stderr}")
+                        st.error("Ensure the system-level dependencies are installed.")
                 except subprocess.CalledProcessError as e:
                     st.error(f"Failed to install dependencies from requirements.txt: {e}")
-                    st.error("Ensure the system-level dependencies are installed.")
                 
                 os.remove(tmp_file_path)
     except Exception as e:
@@ -92,6 +94,8 @@ def fetch_and_run_script(repo_name, file_path):
         
         # Execute the script content
         exec(script_content, globals())
+    except FileNotFoundError as fnf_error:
+        st.error(f"Failed to fetch or run the script: {fnf_error}")
     except Exception as e:
         st.error(f"Failed to fetch or run the script: {e}")
 
