@@ -66,6 +66,7 @@ def install_dependencies(repo_name, file_path):
                     if result.returncode != 0:
                         st.error(f"Failed to install dependencies from requirements.txt:\n{result.stderr}")
                         st.error("Ensure the system-level dependencies are installed.")
+                        st.text(f"Full pip install output:\n{result.stdout}\n{result.stderr}")
                 except subprocess.CalledProcessError as e:
                     st.error(f"Failed to install dependencies from requirements.txt: {e}")
                 
