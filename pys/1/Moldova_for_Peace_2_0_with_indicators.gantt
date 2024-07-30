@@ -1,0 +1,247 @@
+{
+    "data": [
+        {
+            "TaskID": 1,
+            "TaskName": "Project Planning and Coordination",
+            "StartDate": "2024-06-01",
+            "EndDate": "2024-10-31",
+            "Duration": 153,
+            "Progress": 0,
+            "color": "",
+            "Predecessor": "",
+            "resources": [
+                {
+                    "resourceId": "Ion Brinzila",
+                    "resourceName": "Ion Brinzila",
+                    "unit": 100
+                }
+            ],
+            "info": "Completion of project planning and coordination activities. Objective: Efficient project setup and stakeholder alignment.",
+            "DurationUnit": "day"
+        },
+        {
+            "TaskID": 2,
+            "TaskName": "Vulnerability Assessment Framework (VAF) Development",
+            "StartDate": "2024-07-01",
+            "EndDate": "2024-08-31",
+            "Duration": 62,
+            "Progress": 0,
+            "color": "",
+            "Predecessor": "1",
+            "resources": [
+                {
+                    "resourceId": "M4P Research Team",
+                    "resourceName": "M4P Research Team",
+                    "unit": 100
+                }
+            ],
+            "info": "Development and implementation of VAF. Objective: Enhanced targeting and delivery of assistance.",
+            "DurationUnit": "day"
+        },
+        {
+            "TaskID": 3,
+            "TaskName": "Data Collection and Analysis",
+            "StartDate": "2024-09-01",
+            "EndDate": "2024-10-31",
+            "Duration": 61,
+            "Progress": 0,
+            "color": "",
+            "Predecessor": "2",
+            "resources": [
+                {
+                    "resourceId": "Data Collection Team",
+                    "resourceName": "Data Collection Team",
+                    "unit": 100
+                }
+            ],
+            "info": "Collection and analysis of data on 3,200 households. Objective: Comprehensive understanding of community needs.",
+            "DurationUnit": "day"
+        },
+        {
+            "TaskID": 4,
+            "TaskName": "Community Engagement and Social Cohesion Activities",
+            "StartDate": "2024-06-15",
+            "EndDate": "2025-01-15",
+            "Duration": 215,
+            "Progress": 0,
+            "color": "",
+            "Predecessor": "1",
+            "resources": [
+                {
+                    "resourceId": "Community Engagement Team",
+                    "resourceName": "Community Engagement Team",
+                    "unit": 100
+                }
+            ],
+            "info": "Conducting 20 community engagement activities. Objective: Improved social cohesion and community integration.",
+            "DurationUnit": "day"
+        },
+        {
+            "TaskID": 5,
+            "TaskName": "Humanitarian Aid Distribution",
+            "StartDate": "2024-07-01",
+            "EndDate": "2024-12-31",
+            "Duration": 184,
+            "Progress": 0,
+            "color": "",
+            "Predecessor": "1",
+            "resources": [
+                {
+                    "resourceId": "Humanitarian Aid Team",
+                    "resourceName": "Humanitarian Aid Team",
+                    "unit": 100
+                }
+            ],
+            "info": "Distribution of aid to 3,200 households. Objective: Meeting immediate needs of vulnerable groups.",
+            "DurationUnit": "day"
+        },
+        {
+            "TaskID": 6,
+            "TaskName": "Monitoring and Evaluation",
+            "StartDate": "2024-06-01",
+            "EndDate": "2025-01-31",
+            "Duration": 245,
+            "Progress": 0,
+            "color": "",
+            "Predecessor": "1",
+            "resources": [
+                {
+                    "resourceId": "MEAL Team",
+                    "resourceName": "MEAL Team",
+                    "unit": 100
+                }
+            ],
+            "info": "Regular monitoring reports and final evaluation report. Objective: Ensuring project quality and responsiveness.",
+            "DurationUnit": "day"
+        },
+        {
+            "TaskID": 7,
+            "TaskName": "Training and Capacity Building",
+            "StartDate": "2024-08-01",
+            "EndDate": "2024-10-31",
+            "Duration": 92,
+            "Progress": 0,
+            "color": "",
+            "Predecessor": "2",
+            "resources": [
+                {
+                    "resourceId": "Training Team",
+                    "resourceName": "Training Team",
+                    "unit": 100
+                }
+            ],
+            "info": "Training 100 staff and beneficiaries. Objective: Improved capacity and skills for project implementation.",
+            "DurationUnit": "day"
+        },
+        {
+            "TaskID": 8,
+            "TaskName": "Development of Social Integration Programs",
+            "StartDate": "2024-07-01",
+            "EndDate": "2024-12-31",
+            "Duration": 184,
+            "Progress": 0,
+            "color": "",
+            "Predecessor": "2",
+            "resources": [
+                {
+                    "resourceId": "Program Development Team",
+                    "resourceName": "Program Development Team",
+                    "unit": 100
+                }
+            ],
+            "info": "Development of 5 social integration programs. Objective: Enhanced social integration and support.",
+            "DurationUnit": "day"
+        },
+        {
+            "TaskID": 9,
+            "TaskName": "Public Community Events",
+            "StartDate": "2024-08-01",
+            "EndDate": "2025-01-15",
+            "Duration": 168,
+            "Progress": 0,
+            "color": "",
+            "Predecessor": "4",
+            "resources": [
+                {
+                    "resourceId": "Events Team",
+                    "resourceName": "Events Team",
+                    "unit": 100
+                }
+            ],
+            "info": "Organizing 3 public community events. Objective: Strengthened community cohesion and identity.",
+            "DurationUnit": "day"
+        },
+        {
+            "TaskID": 10,
+            "TaskName": "Final Project Report and Documentation",
+            "StartDate": "2025-01-01",
+            "EndDate": "2025-01-31",
+            "Duration": 31,
+            "Progress": 0,
+            "color": "",
+            "Predecessor": "1,2,3,4,5,6,7,8,9",
+            "resources": [
+                {
+                    "resourceId": "Documentation Team",
+                    "resourceName": "Documentation Team",
+                    "unit": 100
+                }
+            ],
+            "info": "Completion of final project report and documentation. Objective: Comprehensive project closure and reporting.",
+            "DurationUnit": "day"
+        }
+    ],
+    "resources": [
+        {
+            "resourceId": "Ion Brinzila",
+            "resourceName": "Ion Brinzila"
+        },
+        {
+            "resourceId": "M4P Research Team",
+            "resourceName": "M4P Research Team"
+        },
+        {
+            "resourceId": "Data Collection Team",
+            "resourceName": "Data Collection Team"
+        },
+        {
+            "resourceId": "Community Engagement Team",
+            "resourceName": "Community Engagement Team"
+        },
+        {
+            "resourceId": "Humanitarian Aid Team",
+            "resourceName": "Humanitarian Aid Team"
+        },
+        {
+            "resourceId": "MEAL Team",
+            "resourceName": "MEAL Team"
+        },
+        {
+            "resourceId": "Training Team",
+            "resourceName": "Training Team"
+        },
+        {
+            "resourceId": "Program Development Team",
+            "resourceName": "Program Development Team"
+        },
+        {
+            "resourceId": "Events Team",
+            "resourceName": "Events Team"
+        },
+        {
+            "resourceId": "Documentation Team",
+            "resourceName": "Documentation Team"
+        }
+    ],
+    "advanced": {
+        "workWeek": [
+            "Monday",
+            "Tuesday",
+            "Wednesday",
+            "Thursday",
+            "Friday",
+            "Saturday",
+            "Sunday"
+        ]
+    }
+}
