@@ -57,9 +57,15 @@ def fetch_and_run_script(repo_name, file_path, branch):
             tmp_file.write(response.content)
             tmp_file_path = tmp_file.name
         
-        # Execute the script content
-        exec(open(tmp_file_path).read(), globals())
+        # Read the content of the temporary file
+        with open(tmp_file_path, 'r') as file:
+            script_content = file.read()
+        
+        # Clean up the temporary file
         os.remove(tmp_file_path)
+        
+        # Execute the script content
+        exec(script_content, globals())
     except FileNotFoundError as fnf_error:
         st.error(f"Failed to fetch or run the script: {fnf_error}")
     except Exception as e:
@@ -72,6 +78,7 @@ st.markdown("""
 2. Select the branch, folder, and .py file you want to run.
 3. Click "Run App" to execute the app.
 """)
+
 repo_url = st.text_input("Enter GitHub URL to repository:")
 
 if repo_url:
