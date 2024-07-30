@@ -78,11 +78,34 @@ def view_and_download_files():
     st.sidebar.subheader("View and Download Gantt Files")
     files = list_files()
     if files:
-        selected_file = st.sidebar.selectbox("Select a file to view/download", files)
-        if st.sidebar.button("View"):
-            display_gantt_file(selected_file)
+        selected_file = st.sidebar.selectbox("Select a file to view", files)
+        if selected_file:
+            view_file(selected_file)
         if st.sidebar.button("Download"):
             download_file(selected_file)
+
+def view_file(file_name):
+    url = f"https://raw.githubusercontent.com/{REPO_OWNER}/{REPO_NAME}/{BRANCH_NAME}/{FOLDER_PATH}/{file_name}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        if file_name.endswith('.xlsx'):
+            gantt_data = pd.read_excel(response.content)
+        elif file_name.endswith('.csv'):
+            gantt_data = pd.read_csv(response.content)
+        elif file_name.endswith('.gantt'):
+            file_content = response.content.decode('utf-8')
+            gantt_data = process_gantt_json(file_content)
+        else:
+            st.error("Unsupported file type. Please select a CSV, XLSX, or Gantt file.")
+            return
+        
+        if not gantt_data.empty:
+            gantt_chart = create_gantt_chart(gantt_data)
+            st.plotly_chart(gantt_chart)
+            show_dashboard(gantt_data)
+    else:
+        st.error(f"Failed to fetch file from GitHub: {response.status_code}")
+        st.write(response.text)
 
 def process_gantt_file_content(file_content):
     try:
