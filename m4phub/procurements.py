@@ -42,41 +42,6 @@ def main():
 def submit_request():
     st.header("Submit a Procurement Request")
 
-    # Custom HTML for better camera access
-    st.markdown("""
-    <style>
-        #camera-container { width: 100%; max-width: 640px; margin: 0 auto; }
-        #camera-feed { width: 100%; }
-        #capture-btn { display: block; margin: 10px auto; }
-    </style>
-    <div id="camera-container">
-        <video id="camera-feed" autoplay playsinline></video>
-        <button id="capture-btn">Capture Document</button>
-    </div>
-    <canvas id="canvas" style="display:none;"></canvas>
-    <script>
-        const video = document.getElementById('camera-feed');
-        const canvas = document.getElementById('canvas');
-        const captureBtn = document.getElementById('capture-btn');
-        
-        navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } })
-            .then(stream => {
-                video.srcObject = stream;
-            })
-            .catch(error => {
-                console.error('Error accessing camera:', error);
-            });
-        
-        captureBtn.addEventListener('click', () => {
-            canvas.width = video.videoWidth;
-            canvas.height = video.videoHeight;
-            canvas.getContext('2d').drawImage(video, 0, 0);
-            const imageData = canvas.toDataURL('image/jpeg');
-            window.parent.postMessage({type: 'camera_capture', image: imageData}, '*');
-        });
-    </script>
-    """, unsafe_allow_html=True)
-
     # Guidelines for better document scanning
     st.markdown("""
     ### Guidelines for Better Document Scanning:
@@ -114,6 +79,9 @@ def submit_request():
         # File upload option
         uploaded_file = st.file_uploader("Upload a document (receipt, invoice, etc.)", type=["png", "jpg", "jpeg", "pdf"])
 
+        # Camera input option
+        camera_input = st.camera_input("Or take a picture")
+
         submitted = st.form_submit_button("Submit Request")
 
         if submitted:
@@ -139,7 +107,7 @@ def submit_request():
                         {"link": offer3_link, "price": offer3_price}
                     ]
                 
-                # Process uploaded file
+                # Process uploaded file or camera input
                 if uploaded_file is not None:
                     file_contents = uploaded_file.read()
                     request["file"] = file_contents
@@ -150,25 +118,18 @@ def submit_request():
                         buffered = io.BytesIO()
                         enhanced_image.save(buffered, format="JPEG")
                         request["enhanced_file"] = buffered.getvalue()
+                elif camera_input is not None:
+                    image = Image.open(camera_input)
+                    enhanced_image = enhance_image(image)
+                    buffered = io.BytesIO()
+                    enhanced_image.save(buffered, format="JPEG")
+                    request["file"] = camera_input.getvalue()
+                    request["file_type"] = "image/jpeg"
+                    request["enhanced_file"] = buffered.getvalue()
 
                 st.session_state.requests.append(request)
                 st.success("Request submitted successfully!")
                 send_email("New Procurement Request", f"A new procurement request has been submitted: {title}", "admin@example.com")
-
-    # Handle camera capture
-    if st.session_state.get('camera_image'):
-        image_data = base64.b64decode(st.session_state.camera_image.split(',')[1])
-        image = Image.open(io.BytesIO(image_data))
-        enhanced_image = enhance_image(image)
-        st.image(enhanced_image, caption="Captured and Enhanced Document", use_column_width=True)
-        
-        if st.button("Use this image"):
-            buffered = io.BytesIO()
-            enhanced_image.save(buffered, format="JPEG")
-            st.session_state.requests[-1]["file"] = buffered.getvalue()
-            st.session_state.requests[-1]["file_type"] = "image/jpeg"
-            st.session_state.requests[-1]["enhanced_file"] = buffered.getvalue()
-            st.success("Image added to the request successfully!")
 
 def view_requests():
     st.header("View Procurement Requests")
@@ -228,23 +189,3 @@ def admin_panel():
 
 if __name__ == "__main__":
     main()
-
-# Add this to handle camera capture events
-if 'camera_image' not in st.session_state:
-    st.session_state.camera_image = None
-
-def handle_camera_capture(image_data):
-    st.session_state.camera_image = image_data
-
-st.components.v1.html("""
-<script>
-window.addEventListener('message', function(e) {
-    if (e.data.type === 'camera_capture') {
-        window.parent.postMessage({
-            type: 'streamlit:setComponentValue',
-            value: e.data.image
-        }, '*');
-    }
-}, false);
-</script>
-""", height=0)
