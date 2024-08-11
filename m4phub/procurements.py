@@ -6,15 +6,8 @@ import json
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
-import numpy as np
 from PIL import Image
-
-# Try to import pytesseract, but provide a friendly error message if it's not available
-try:
-    import pytesseract
-except ImportError:
-    st.error("pytesseract is not installed. OCR functionality will not be available.")
-    pytesseract = None
+import io
 
 # Initialize session state
 if 'requests' not in st.session_state:
@@ -25,13 +18,6 @@ def send_email(subject, body, to_email):
     st.write(f"Email sent to {to_email}")
     st.write(f"Subject: {subject}")
     st.write(f"Body: {body}")
-
-def perform_ocr(image):
-    if pytesseract is None:
-        return "OCR is not available due to missing pytesseract library."
-    # Perform OCR on the image
-    text = pytesseract.image_to_string(image)
-    return text
 
 def main():
     st.title("Procurement Request Management")
@@ -106,13 +92,13 @@ def submit_request():
                 
                 # Process uploaded file or camera input
                 if uploaded_file is not None:
-                    image = Image.open(uploaded_file)
-                    ocr_text = perform_ocr(image)
-                    request["ocr_text"] = ocr_text
+                    file_contents = uploaded_file.read()
+                    request["file"] = file_contents
+                    request["file_type"] = uploaded_file.type
                 elif camera_input is not None:
-                    image = Image.open(camera_input)
-                    ocr_text = perform_ocr(image)
-                    request["ocr_text"] = ocr_text
+                    file_contents = camera_input.read()
+                    request["file"] = file_contents
+                    request["file_type"] = "image/jpeg"  # Camera input is typically JPEG
 
                 st.session_state.requests.append(request)
                 st.success("Request submitted successfully!")
@@ -124,8 +110,19 @@ def view_requests():
     if not st.session_state.requests:
         st.info("No requests submitted yet.")
     else:
-        df = pd.DataFrame(st.session_state.requests)
-        st.dataframe(df)
+        for i, request in enumerate(st.session_state.requests):
+            with st.expander(f"Request: {request['title']}"):
+                st.write(f"Description: {request['description']}")
+                st.write(f"Quantity: {request['quantity']}")
+                st.write(f"Total Price: {request['total_price']} Moldovan Lira")
+                st.write(f"Status: {request['status']}")
+                if 'file' in request:
+                    if request['file_type'].startswith('image/'):
+                        st.image(request['file'], caption="Uploaded Image")
+                    elif request['file_type'] == 'application/pdf':
+                        st.write("PDF file uploaded (preview not available)")
+                    else:
+                        st.write(f"File of type {request['file_type']} uploaded")
 
 def admin_panel():
     st.header("Admin Panel")
@@ -139,8 +136,13 @@ def admin_panel():
                 st.write(f"Quantity: {request['quantity']}")
                 st.write(f"Total Price: {request['total_price']} Moldovan Lira")
                 st.write(f"Status: {request['status']}")
-                if 'ocr_text' in request:
-                    st.write(f"OCR Text: {request['ocr_text']}")
+                if 'file' in request:
+                    if request['file_type'].startswith('image/'):
+                        st.image(request['file'], caption="Uploaded Image")
+                    elif request['file_type'] == 'application/pdf':
+                        st.write("PDF file uploaded (preview not available)")
+                    else:
+                        st.write(f"File of type {request['file_type']} uploaded")
 
                 new_status = st.selectbox("Update Status", ["Pending", "Approved", "Denied", "Archived"], key=f"status_{i}")
                 comment = st.text_area("Add Comment", key=f"comment_{i}")
