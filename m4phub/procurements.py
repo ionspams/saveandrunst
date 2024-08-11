@@ -7,8 +7,14 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 import numpy as np
-import pytesseract
 from PIL import Image
+
+# Try to import pytesseract, but provide a friendly error message if it's not available
+try:
+    import pytesseract
+except ImportError:
+    st.error("pytesseract is not installed. OCR functionality will not be available.")
+    pytesseract = None
 
 # Initialize session state
 if 'requests' not in st.session_state:
@@ -21,6 +27,8 @@ def send_email(subject, body, to_email):
     st.write(f"Body: {body}")
 
 def perform_ocr(image):
+    if pytesseract is None:
+        return "OCR is not available due to missing pytesseract library."
     # Perform OCR on the image
     text = pytesseract.image_to_string(image)
     return text
