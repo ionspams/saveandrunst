@@ -3,12 +3,4 @@ pandas==2.2.2
 numpy==1.26.4
 pytesseract==0.3.10
 Pillow==10.4.0
-google-auth==2.33.0
-google-auth-oauthlib==1.2.1
-gspread==6.1.2
-oauth2client==4.1.3
 python-dotenv==1.0.1
-openpyxl==3.1.5
-PyPDF2==3.0.1
-plotly==5.23.0
-PyGithub==2.3.0
