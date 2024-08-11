@@ -6,6 +6,10 @@ import json
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+import cv2
+import numpy as np
+import pytesseract
+from PIL import Image
 
 # Initialize session state
 if 'requests' not in st.session_state:
@@ -16,6 +20,11 @@ def send_email(subject, body, to_email):
     st.write(f"Email sent to {to_email}")
     st.write(f"Subject: {subject}")
     st.write(f"Body: {body}")
+
+def perform_ocr(image):
+    # Perform OCR on the image
+    text = pytesseract.image_to_string(image)
+    return text
 
 def main():
     st.title("Procurement Request Management")
@@ -57,6 +66,12 @@ def submit_request():
             offer3_link = st.text_input("Third offer link")
             offer3_price = st.number_input("Third offer price", min_value=0.0, format="%.2f")
 
+        # File upload option
+        uploaded_file = st.file_uploader("Upload a document (receipt, invoice, etc.)", type=["png", "jpg", "jpeg", "pdf"])
+
+        # Camera input option
+        camera_input = st.camera_input("Or take a picture")
+
         submitted = st.form_submit_button("Submit Request")
 
         if submitted:
@@ -82,6 +97,16 @@ def submit_request():
                         {"link": offer3_link, "price": offer3_price}
                     ]
                 
+                # Process uploaded file or camera input
+                if uploaded_file is not None:
+                    image = Image.open(uploaded_file)
+                    ocr_text = perform_ocr(image)
+                    request["ocr_text"] = ocr_text
+                elif camera_input is not None:
+                    image = Image.open(camera_input)
+                    ocr_text = perform_ocr(image)
+                    request["ocr_text"] = ocr_text
+
                 st.session_state.requests.append(request)
                 st.success("Request submitted successfully!")
                 send_email("New Procurement Request", f"A new procurement request has been submitted: {title}", "admin@example.com")
@@ -107,6 +132,8 @@ def admin_panel():
                 st.write(f"Quantity: {request['quantity']}")
                 st.write(f"Total Price: {request['total_price']} Moldovan Lira")
                 st.write(f"Status: {request['status']}")
+                if 'ocr_text' in request:
+                    st.write(f"OCR Text: {request['ocr_text']}")
 
                 new_status = st.selectbox("Update Status", ["Pending", "Approved", "Denied", "Archived"], key=f"status_{i}")
                 comment = st.text_area("Add Comment", key=f"comment_{i}")
