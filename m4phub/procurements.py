@@ -65,12 +65,12 @@ def submit_request():
             if frequency == "Other":
                 frequency_other = st.text_input("Specify frequency")
         
-        price_per_item = st.number_input("Price per item (in Moldovan Lira)", min_value=0.0, format="%.2f")
+        price_per_item = st.number_input("Price per item (in Moldovan Lei)", min_value=0.0, format="%.2f")
         total_price = quantity * price_per_item
-        st.write(f"Total Price: {total_price:.2f} Moldovan Lira")
+        st.write(f"Total Price: {total_price:.2f} Moldovan Lei")
 
         if total_price > 10000:
-            st.warning("For purchases over 10,000 Moldovan Lira, please provide two more offers.")
+            st.warning("For purchases over 10,000 Moldovan Lei, please provide two more offers.")
             offer2_link = st.text_input("Second offer link")
             offer2_price = st.number_input("Second offer price", min_value=0.0, format="%.2f")
             offer3_link = st.text_input("Third offer link")
@@ -141,7 +141,7 @@ def view_requests():
             with st.expander(f"Request: {request['title']}"):
                 st.write(f"Description: {request['description']}")
                 st.write(f"Quantity: {request['quantity']}")
-                st.write(f"Total Price: {request['total_price']} Moldovan Lira")
+                st.write(f"Total Price: {request['total_price']} Moldovan Lei")
                 st.write(f"Status: {request['status']}")
                 if 'file' in request:
                     if request['file_type'].startswith('image/'):
@@ -164,7 +164,7 @@ def admin_panel():
             with st.expander(f"Request: {request['title']}"):
                 st.write(f"Description: {request['description']}")
                 st.write(f"Quantity: {request['quantity']}")
-                st.write(f"Total Price: {request['total_price']} Moldovan Lira")
+                st.write(f"Total Price: {request['total_price']} Moldovan Lei")
                 st.write(f"Status: {request['status']}")
                 if 'file' in request:
                     if request['file_type'].startswith('image/'):
