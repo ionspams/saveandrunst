@@ -9,3 +9,5 @@ plotly
 openpyxl
 PyPDF2
 numpy
+openai
+mem0ai
